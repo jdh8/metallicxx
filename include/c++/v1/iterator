@@ -394,7 +394,7 @@ class move_iterator
 
     pointer operator->() const
     {
-        return current;
+        return __current;
     }
 
     reference operator[](difference_type __n) const
