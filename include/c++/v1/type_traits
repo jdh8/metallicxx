@@ -999,10 +999,10 @@ struct __aligned_union_base
 template<typename _T, typename..._Rest>
 struct __aligned_union_base<_T, _Rest...>
 {
-  private:
+private:
     typedef __aligned_union_base<_Rest...> _Strictest;
 
-  public:
+public:
     static constexpr size_t alignment_value = alignof(_T) > _Strictest::alignment_value
         ? alignof(_T) : _Strictest::alignment_value;
     class type { alignas(alignment_value) char _data[sizeof(_T) > sizeof(_Strictest::type)
