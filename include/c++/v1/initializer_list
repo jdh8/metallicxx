@@ -1,0 +1,53 @@
+#ifndef _METALLIC_INITIALIZER_LIST
+#define _METALLIC_INITIALIZER_LIST
+
+namespace std {
+
+typedef __SIZE_TYPE__ size_t;
+
+template<typename _T>
+class initializer_list
+{
+    const _T* __begin;
+    size_t __size;
+
+    constexpr initializer_list(const _T* __x, size_t __n)
+      : __begin(__x),
+        __size(__n)
+    {}
+
+public:
+    typedef _T value_type;
+    typedef const _T& reference;
+    typedef const _T& const_reference;
+    typedef size_t size_type;
+    typedef const _T* iterator;
+    typedef const _T* const_iterator;
+
+    constexpr initializer_list() noexcept
+      : __begin(nullptr),
+        __size(0)
+    {}
+
+    constexpr size_t size() const noexcept { return __size; }
+    constexpr const _T* begin() const noexcept { return __begin; }
+    constexpr const _T* end() const noexcept { return __begin + __size; }
+};
+
+template<typename _T>
+constexpr const _T* begin(initializer_list<_T> __il) noexcept
+{
+    return __il.begin();
+}
+
+template<typename _T>
+constexpr const _T* end(initializer_list<_T> __il) noexcept
+{
+    return __il.end();
+}
+
+} // std
+
+#endif // <initializer_list>
+
+// vim: ft=cpp
