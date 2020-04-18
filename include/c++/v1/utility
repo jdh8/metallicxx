@@ -1,0 +1,76 @@
+#ifndef _METALLIC_UTILITY
+#define _METALLIC_UTILITY
+
+#include <bits/attributes>
+#include <initializer_list>
+#include <type_traits>
+
+namespace std {
+
+template<typename _T>
+__enable_if_t<is_move_constructible<_T>::value && is_move_assignable<_T>::value>
+swap(_T& __x, _T& __y) noexcept(is_nothrow_move_constructible<_T>::value && is_nothrow_move_assignable<_T>::value)
+{
+    _T __t = static_cast<_T&&>(__x);
+    __x = static_cast<_T&&>(__y);
+    __y = static_cast<_T&&>(__t);
+}
+
+template<typename _T, size_t _N>
+__enable_if_t<__swappable<_T>::value>
+swap(_T (&__x)[_N], _T (&__y)[_N]) noexcept(__nothrow_swappable<_T>::value)
+{
+    for (size_t __i = 0; __i < _N; ++__i)
+        swap(__x[__i], __y[__i]);
+}
+
+template<typename _T>
+constexpr _T&& forward(__remove_reference_t<_T>& __x) noexcept
+{
+    return static_cast<_T&&>(__x);
+}
+
+template<typename _T>
+constexpr _T&& forward(__remove_reference_t<_T>&& __x) noexcept
+{
+    static_assert(!is_lvalue_reference<_T>::value, "It is prohibited to forward rvalues as lvalues.");
+    return static_cast<_T&&>(__x);
+}
+
+template<typename _T>
+constexpr __remove_reference_t<_T>&& move(_T&& __x) noexcept
+{
+    return static_cast<__remove_reference_t<_T>&&>(__x);
+}
+
+template<typename _T>
+typename conditional<!is_nothrow_move_constructible<_T>::value && is_copy_constructible<_T>::value, const _T&, _T&&>::type
+move_if_noexcept(_T& __x) noexcept
+{
+    return static_cast<_T&&>(__x);
+}
+
+#if __cplusplus > 201103L
+template<typename _T, typename _U = _T>
+_T exchange(_T& __reference, _U&& __value)
+{
+    _T __result = static_cast<_T&&>(__reference);
+    __reference = static_cast<_U&&>(__value);
+    return __result;
+}
+#endif
+
+struct piecewise_construct_t
+{
+#if __cplusplus > 201402L
+    explicit piecewise_construct_t() = default;
+#endif
+};
+
+_METALLIC_INLINE_VAR constexpr piecewise_construct_t piecewise_construct {};
+
+} // std
+
+#endif // <utility>
+
+// vim: ft=cpp

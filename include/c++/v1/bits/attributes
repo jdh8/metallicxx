@@ -19,6 +19,12 @@
 #define _METALLIC_NOEXCEPT
 #endif
 
+#if __cplusplus > 201402L
+#define _METALLIC_INLINE_VAR inline
+#else
+#define _METALLIC_INLINE_VAR
+#endif
+
 #endif // <bits/attributes>
 
 // vim: ft=cpp

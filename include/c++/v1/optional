@@ -3,10 +3,10 @@
 
 #include <bits/inplace>
 #include <bits/sfinae>
-#include <initializer_list>
 #include <exception>
 #include <new>
 #include <type_traits>
+#include <utility>
 
 namespace std {
 
@@ -285,10 +285,7 @@ class optional : private __optional_base<_T>
     static const bool _Assignable = is_constructible<_T, _U>::value && is_assignable<_T&, _U>::value;
 
     template<typename _U>
-    using _RemoveCvref = typename remove_cv<typename remove_reference<_U>::type>::type;
-
-    template<typename _U>
-    static const bool _IsHint = is_same<_RemoveCvref<_U>, in_place_t>::value || is_same<_RemoveCvref<_U>, optional>::value;
+    static const bool _IsHint = is_same<__remove_cvref_t<_U>, in_place_t>::value || is_same<__remove_cvref_t<_U>, optional>::value;
     
     template<typename _U>
     static const bool _AlreadyConstructible =
@@ -376,8 +373,8 @@ public:
     template<typename _U>
     enable_if_t<
         _Assignable<_U> &&
-        !is_same<_RemoveCvref<_U>, optional>::value &&
-        (!is_scalar<_T>::value || !is_same<_RemoveCvref<_U>, _T>::value),
+        !is_same<__remove_cvref_t<_U>, optional>::value &&
+        (!is_scalar<_T>::value || !is_same<__remove_cvref_t<_U>, _T>::value),
     optional&> operator=(_U&& __value)
     {
         if (*this)
@@ -463,8 +460,6 @@ public:
 
     void swap(optional& __other)
     {
-        using std::swap;
-
         if (*this) {
             if (__other) {
                 swap(**this, *__other);
