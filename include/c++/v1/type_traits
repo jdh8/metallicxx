@@ -119,6 +119,11 @@ struct remove_reference<_T&&>
     typedef _T type;
 };
 
+template<typename _T>
+struct __remove_cvref
+  : remove_cv<typename remove_reference<_T>::type>
+{};
+
 template<typename _T, typename = void>
 struct __add_lvalue_reference_base
 {
@@ -1201,6 +1206,53 @@ using void_t = void;
 template<typename _F, typename... _Args>
 using invoke_result_t = typename invoke_result<_F, _Args...>::type;
 #endif // C++ > 14
+
+///////////////////////////////// Swap /////////////////////////////////
+
+template<typename...>
+class tuple;
+
+template<typename>
+struct __is_tuple
+  : false_type
+{};
+
+template<typename... _T>
+struct __is_tuple<tuple<_T...>>
+  : true_type
+{};
+
+template<typename _T>
+struct __refers_to_tuple
+  : __is_tuple<typename __remove_cvref<_T>::type>
+{};
+
+template<typename _T>
+typename enable_if<
+    !__refers_to_tuple<_T>::value &&
+    is_move_constructible<_T>::value &&
+    is_move_assignable<_T>::value
+>::type swap(_T&, _T&) noexcept(is_nothrow_move_constructible<_T>::value && is_nothrow_move_assignable<_T>::value);
+
+template<typename _T, typename _U, typename = void, typename = void>
+struct __swappable_with
+  : false_type
+{};
+
+template<typename _T, typename _U>
+struct __swappable_with<_T, _U, decltype(swap(declval<_T>(), declval<_U>())), decltype(swap(declval<_U>(), declval<_T>()))>
+  : true_type
+{};
+
+template<typename _T, typename _U, bool = __swappable_with<_T, _U>::value>
+struct __nothrow_swappable_with
+  : false_type
+{};
+
+template<typename _T, typename _U>
+struct __nothrow_swappable_with<_T, _U, true>
+  : integral_constant<bool, noexcept(swap(declval<_T>(), declval<_U>())) && noexcept(swap(declval<_U>(), declval<_T>()))>
+{};
 
 } // namespace std
 
