@@ -1,0 +1,17 @@
+#ifndef _METALLIC_EXCEPTION
+#define _METALLIC_EXCEPTION
+
+namespace std {
+
+struct exception
+{
+    virtual ~exception() noexcept;
+    virtual const char* what() const noexcept;
+};
+
+} // std
+
+#endif // <exception>
+
+// vim: ft=cpp
+

@@ -1,0 +1,66 @@
+#ifndef _METALLIC_BITS_SFINAE
+#define _METALLIC_BITS_SFINAE
+
+namespace std {
+
+template<bool>
+struct __sfinae_copy_constructible
+{};
+
+template<>
+struct __sfinae_copy_constructible<false>
+{
+    __sfinae_copy_constructible() = default;
+    __sfinae_copy_constructible(const __sfinae_copy_constructible&) = delete;
+    __sfinae_copy_constructible(__sfinae_copy_constructible&&) = default;
+    __sfinae_copy_constructible& operator=(const __sfinae_copy_constructible&) = default;
+    __sfinae_copy_constructible& operator=(__sfinae_copy_constructible&&) = default;
+};
+
+template<bool>
+struct __sfinae_move_constructible
+{};
+
+template<>
+struct __sfinae_move_constructible<false>
+{
+    __sfinae_move_constructible() = default;
+    __sfinae_move_constructible(const __sfinae_move_constructible&) = default;
+    __sfinae_move_constructible(__sfinae_move_constructible&&) = delete;
+    __sfinae_move_constructible& operator=(const __sfinae_move_constructible&) = default;
+    __sfinae_move_constructible& operator=(__sfinae_move_constructible&&) = default;
+};
+
+template<bool>
+struct __sfinae_copy_assignable
+{};
+
+template<>
+struct __sfinae_copy_assignable<false>
+{
+    __sfinae_copy_assignable() = default;
+    __sfinae_copy_assignable(const __sfinae_copy_assignable&) = default;
+    __sfinae_copy_assignable(__sfinae_copy_assignable&&) = default;
+    __sfinae_copy_assignable& operator=(const __sfinae_copy_assignable&) = delete;
+    __sfinae_copy_assignable& operator=(__sfinae_copy_assignable&&) = default;
+};
+
+template<bool>
+struct __sfinae_move_assignable
+{};
+
+template<>
+struct __sfinae_move_assignable<false>
+{
+    __sfinae_move_assignable() = default;
+    __sfinae_move_assignable(const __sfinae_move_assignable&) = default;
+    __sfinae_move_assignable(__sfinae_move_assignable&&) = default;
+    __sfinae_move_assignable& operator=(const __sfinae_move_assignable&) = default;
+    __sfinae_move_assignable& operator=(__sfinae_move_assignable&&) = delete;
+};
+
+} // std
+
+#endif // <bits/sfinae>
+
+// vim: ft=cpp

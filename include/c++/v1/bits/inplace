@@ -1,0 +1,37 @@
+#ifndef _METALLIC_BITS_INPLACE
+#define _METALLIC_BITS_INPLACE
+
+namespace std {
+
+typedef __SIZE_TYPE__ size_t;
+
+struct in_place_t
+{
+    explicit in_place_t() = default;
+};
+
+template<typename>
+struct in_place_type_t
+{
+    explicit in_place_type_t() = default;
+};
+
+template<size_t>
+struct in_place_index_t
+{
+    explicit in_place_index_t() = default;
+};
+
+inline constexpr in_place_t in_place {};
+
+template <class _T>
+inline constexpr in_place_type_t<_T> in_place_type {};
+
+template <size_t _I>
+inline constexpr in_place_index_t<_I> in_place_index {};
+
+} // std
+
+#endif // <bits/inplace>
+
+// vim: ft=cpp
