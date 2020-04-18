@@ -71,6 +71,57 @@ _T exchange(_T& __reference, _U&& __value)
     return __result;
 }
 
+template<typename _T, _T... _I>
+struct integer_sequence
+{
+    typedef _T value_type;
+
+    static constexpr size_t size() noexcept { return sizeof...(_I); }
+};
+
+template<size_t... _I>
+using index_sequence = integer_sequence<size_t, _I...>;
+
+template<typename, typename>
+struct __concat_integer_sequence;
+
+template<typename _T, _T... _I, _T... _J>
+struct __concat_integer_sequence<integer_sequence<_T, _I...>, integer_sequence<_T, _J...>>
+{
+    typedef integer_sequence<_T, _I..., _J...> type;
+};
+
+template<typename _T, _T _Begin, _T _End, bool = _Begin <= _End, unsigned long long = _End - _Begin>
+struct __integer_range;
+
+template<typename _T, _T _Begin, _T _End>
+struct __integer_range<_T, _Begin, _End, true, 0>
+{
+    typedef integer_sequence<_T> type;
+};
+
+template<typename _T, _T _Begin, _T _End>
+struct __integer_range<_T, _Begin, _End, true, 1>
+{
+    typedef integer_sequence<_T, _Begin> type;
+};
+
+template<typename _T, _T _Begin, _T _End, unsigned long long _Distance>
+struct __integer_range<_T, _Begin, _End, true, _Distance>
+  : __concat_integer_sequence<
+        typename __integer_range<_T, _Begin, _Begin + (_Distance >> 1)>::type,
+        typename __integer_range<_T, _Begin + (_Distance >> 1), _End>::type>
+{};
+
+template<typename _T, _T _N>
+using make_integer_sequence = typename __integer_range<_T, 0, _N>::type;
+
+template<size_t _N>
+using make_index_sequence = make_integer_sequence<size_t, _N>;
+
+template<typename... _T>
+using index_sequence_for = make_index_sequence<sizeof...(_T)>;
+
 #endif // C++ > 11
 
 #if __cplusplus > 201402L
