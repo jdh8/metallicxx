@@ -109,8 +109,8 @@ struct __integer_range<_T, _Begin, _End, true, 1>
 template<typename _T, _T _Begin, _T _End, unsigned long long _Distance>
 struct __integer_range<_T, _Begin, _End, true, _Distance>
   : __concat_integer_sequence<
-        typename __integer_range<_T, _Begin, _Begin + (_Distance >> 1)>::type,
-        typename __integer_range<_T, _Begin + (_Distance >> 1), _End>::type>
+        typename __integer_range<_T, _Begin, _Begin + _T{ _Distance >> 1 }>::type,
+        typename __integer_range<_T, _Begin + _T{ _Distance >> 1 }, _End>::type>
 {};
 
 template<typename _T, _T _N>
