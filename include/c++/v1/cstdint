@@ -41,7 +41,7 @@ using ::uintptr_t;
 using ::intmax_t;
 using ::uintmax_t;
 
-} // namespace std
+} // std
 
 #endif // <cstdint>
 

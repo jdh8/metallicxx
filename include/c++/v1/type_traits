@@ -1287,7 +1287,7 @@ struct is_nothrow_swappable
 {};
 #endif // C++ > 14
 
-} // namespace std
+} // std
 
 #endif // <type_traits>
 

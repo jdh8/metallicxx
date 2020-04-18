@@ -1,7 +1,6 @@
 #ifndef _METALLIC_UTILITY
 #define _METALLIC_UTILITY
 
-#include <bits/attributes>
 #include <initializer_list>
 #include <type_traits>
 
@@ -67,7 +66,10 @@ struct piecewise_construct_t
 #endif
 };
 
-_METALLIC_INLINE_VAR constexpr piecewise_construct_t piecewise_construct {};
+#if __cplusplus > 201402L
+inline
+#endif
+constexpr piecewise_construct_t piecewise_construct {};
 
 } // std
 

@@ -2,10 +2,7 @@
 #define _METALLIC_CMATH
 
 #include <math.h>
-
-#if __cplusplus >= 201103L
 #include <type_traits>
-#endif
 
 namespace std {
 
@@ -273,7 +270,6 @@ inline long double modf(long double __x, long double* __i)
     return ::modfl(__x, __i);
 }
 
-#if __cplusplus >= 201103L
 template<typename _T>
 typename enable_if<is_integral<_T>::value, double>::type
 fabs(_T __x)
@@ -1182,9 +1178,8 @@ isunordered(_T __x, _U __y)
 {
     return __builtin_isunordered(__promote(__x), __promote(__y));
 }
-#endif // C++11
 
-} // namespace std
+} // std
 
 #endif // <cmath>
 
