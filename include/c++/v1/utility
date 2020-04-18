@@ -49,16 +49,6 @@ move_if_noexcept(_T& __x) noexcept
     return static_cast<_T&&>(__x);
 }
 
-#if __cplusplus > 201103L
-template<typename _T, typename _U = _T>
-_T exchange(_T& __reference, _U&& __value)
-{
-    _T __result = static_cast<_T&&>(__reference);
-    __reference = static_cast<_U&&>(__value);
-    return __result;
-}
-#endif
-
 struct piecewise_construct_t
 {
 #if __cplusplus > 201402L
@@ -70,6 +60,56 @@ struct piecewise_construct_t
 inline
 #endif
 constexpr piecewise_construct_t piecewise_construct {};
+
+#if __cplusplus > 201103L
+
+template<typename _T, typename _U = _T>
+_T exchange(_T& __reference, _U&& __value)
+{
+    _T __result = static_cast<_T&&>(__reference);
+    __reference = static_cast<_U&&>(__value);
+    return __result;
+}
+
+#endif // C++ > 11
+
+#if __cplusplus > 201402L
+
+template<typename _T>
+constexpr const _T& as_const(_T& __x) noexcept
+{
+    return __x;
+}
+
+template<typename _T>
+void as_const(const _T&&) = delete;
+
+struct in_place_t
+{
+    explicit in_place_t() = default;
+};
+
+template<typename>
+struct in_place_type_t
+{
+    explicit in_place_type_t() = default;
+};
+
+template<size_t>
+struct in_place_index_t
+{
+    explicit in_place_index_t() = default;
+};
+
+inline constexpr in_place_t in_place {};
+
+template <class _T>
+inline constexpr in_place_type_t<_T> in_place_type {};
+
+template <size_t _I>
+inline constexpr in_place_index_t<_I> in_place_index {};
+
+#endif // C++ > 14
 
 } // std
 

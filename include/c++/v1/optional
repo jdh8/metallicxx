@@ -1,7 +1,6 @@
 #ifndef _METALLIC_OPTIONAL
 #define _METALLIC_OPTIONAL
 
-#include <bits/inplace>
 #include <bits/sfinae>
 #include <exception>
 #include <new>
