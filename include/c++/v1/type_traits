@@ -52,7 +52,7 @@ struct conditional<false, _T, _F>
 
 ///////////////////////// Type transformations /////////////////////////
 
-typedef __SIZE_TYPE__ size_t;
+typedef decltype(sizeof(0)) size_t;
 
 template<typename...>
 using __void_t = void;

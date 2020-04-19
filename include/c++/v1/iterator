@@ -47,7 +47,7 @@ struct iterator_traits
   : __iterator_traits_base<_Iterator>
 {};
 
-typedef __PTRDIFF_TYPE__ ptrdiff_t;
+typedef decltype("" - "") ptrdiff_t;
 
 template<typename _T>
 struct iterator_traits<_T*>
