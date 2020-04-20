@@ -19,49 +19,41 @@ enum float_round_style
     round_toward_neg_infinity =  3
 };
 
-template<typename>
-struct __limits_base;
-
-template<typename _T>
-struct numeric_limits
-  : __limits_base<_T>
-{};
-
 template<typename _T>
 struct __basic_limits
 {
-    static constexpr bool is_specialized = false;
+    static const bool is_specialized = false;
 
-    static constexpr bool is_signed = false;
-    static constexpr bool is_integer = false;
-    static constexpr bool is_exact = false;
+    static const bool is_signed = false;
+    static const bool is_integer = false;
+    static const bool is_exact = false;
 
-    static constexpr bool has_infinity = false;
-    static constexpr bool has_quiet_NaN = false;
-    static constexpr bool has_signaling_NaN = false;
+    static const bool has_infinity = false;
+    static const bool has_quiet_NaN = false;
+    static const bool has_signaling_NaN = false;
 
-    static constexpr float_denorm_style has_denorm = denorm_absent;
-    static constexpr bool has_denorm_loss = false;
+    static const float_denorm_style has_denorm = denorm_absent;
+    static const bool has_denorm_loss = false;
 
-    static constexpr float_round_style round_style = round_toward_zero;
+    static const float_round_style round_style = round_toward_zero;
 
-    static constexpr bool is_iec559 = false;
-    static constexpr bool is_bounded = false;
-    static constexpr bool is_modulo = false;
+    static const bool is_iec559 = false;
+    static const bool is_bounded = false;
+    static const bool is_modulo = false;
 
-    static constexpr int digits = 0;
-    static constexpr int digits10 = 0;
-    static constexpr int max_digits10 = 0;
+    static const int digits = 0;
+    static const int digits10 = 0;
+    static const int max_digits10 = 0;
 
-    static constexpr int radix = 0;
+    static const int radix = 0;
 
-    static constexpr int min_exponent = 0;
-    static constexpr int min_exponent10 = 0;
-    static constexpr int max_exponent = 0;
-    static constexpr int max_exponent10 = 0;
+    static const int min_exponent = 0;
+    static const int min_exponent10 = 0;
+    static const int max_exponent = 0;
+    static const int max_exponent10 = 0;
 
-    static constexpr bool traps = false;
-    static constexpr bool tinyness_before = false;
+    static const bool traps = false;
+    static const bool tinyness_before = false;
 
     static constexpr _T min() noexcept
     {
@@ -109,66 +101,161 @@ struct __basic_limits
     }
 };
 
-template<typename _T, _T __x, bool = (__x > 0)>
-struct __metallic_fls
-{
-    static constexpr int value = __metallic_fls<_T, (__x >> 1)>::value + 1;
-};
-
-template<typename _T, _T __x>
-struct __metallic_fls<_T, __x, false>
-{
-    static constexpr int value = 0;
-};
+template<typename _T>
+struct numeric_limits
+  : __basic_limits<_T>
+{};
 
 template<typename _T>
+struct numeric_limits<const _T>
+  : numeric_limits<_T>
+{};
+
+template<typename _T>
+struct numeric_limits<volatile _T>
+  : numeric_limits<_T>
+{};
+
+template<typename _T>
+struct numeric_limits<const volatile _T>
+  : numeric_limits<_T>
+{};
+
+template<typename _T, _T _I, bool = !!_I>
+struct __metallic_fls
+{
+    static const int value = __metallic_fls<_T, _I / 2>::value + 1;
+};
+
+template<typename _T, _T _I>
+struct __metallic_fls<_T, _I, false>
+{
+    static const int value = 0;
+};
+
+template<typename _T, _T _Max = static_cast<_T>(-1)>
 struct __integral_limits
   : __basic_limits<_T>
 {
-    static constexpr bool is_specialized = true;
+    static const bool is_specialized = true;
 
-    static constexpr bool is_signed = static_cast<_T>(-1) < 0;
-    static constexpr bool is_integer = true;
-    static constexpr bool is_exact = true;
+    static const bool is_signed = static_cast<_T>(-1) < 0;
+    static const bool is_integer = true;
+    static const bool is_exact = true;
 
-    static constexpr bool is_bounded = true;
-    static constexpr bool is_modulo = !is_signed;
+    static const bool is_bounded = true;
+    static const bool is_modulo = !is_signed;
 
-    static constexpr int digits = __metallic_fls<_T, static_cast<_T>(-1)>::value;
-    static constexpr int digits10 = digits * 1642637L / 5456722;
+    static const int digits = __metallic_fls<_T, _Max>::value;
+    static const int digits10 = digits * 1642637L / 5456722;
 
-    static constexpr int radix = 2;
+    static const int radix = 2;
 
-    static constexpr bool traps = static_cast<_T>(2) == 2;
+    static const bool traps = static_cast<_T>(2) == 2;
+
+    static constexpr _T max() noexcept
+    {
+        return _Max;
+    }
 
     static constexpr _T min() noexcept
     {
-        return is_signed * (-numeric_limits<_T>::max() - !~static_cast<_T>(-1));
+        return is_signed * (-_Max - !~static_cast<_T>(-1));
     }
 
     static constexpr _T lowest() noexcept
     {
         return numeric_limits<_T>::min();
     }
-
-    static constexpr _T max() noexcept
-    {
-        return -1;
-    }
 };
+
+template<>
+struct numeric_limits<bool>
+  : __integral_limits<bool>
+{};
+
+template<>
+struct numeric_limits<unsigned char>
+  : __integral_limits<unsigned char>
+{};
+
+template<>
+struct numeric_limits<char16_t>
+  : __integral_limits<char16_t>
+{};
+
+template<>
+struct numeric_limits<char32_t>
+  : __integral_limits<char32_t>
+{};
+
+template<>
+struct numeric_limits<unsigned short>
+  : __integral_limits<unsigned short>
+{};
+
+template<>
+struct numeric_limits<unsigned>
+  : __integral_limits<unsigned>
+{};
+
+template<>
+struct numeric_limits<unsigned long>
+  : __integral_limits<unsigned long>
+{};
+
+template<>
+struct numeric_limits<unsigned long long>
+  : __integral_limits<unsigned long long>
+{};
+
+template<>
+struct numeric_limits<signed char>
+  : __integral_limits<signed char, __SCHAR_MAX__>
+{};
+
+template<>
+struct numeric_limits<char>
+  : __integral_limits<char, static_cast<char>(-1) < 0 ? __SCHAR_MAX__ : static_cast<char>(-1)>
+{};
+
+template<>
+struct numeric_limits<short>
+  : __integral_limits<short, __SHRT_MAX__>
+{};
+
+template<>
+struct numeric_limits<int>
+  : __integral_limits<int, __INT_MAX__>
+{};
+
+template<>
+struct numeric_limits<long>
+  : __integral_limits<long, __LONG_MAX__>
+{};
+
+template<>
+struct numeric_limits<long long>
+  : __integral_limits<long long, __LONG_LONG_MAX__>
+{};
+
+template<>
+struct numeric_limits<wchar_t>
+  : numeric_limits<__WCHAR_TYPE__>
+{};
 
 template<typename _T>
 struct __float_limits
   : __basic_limits<_T>
 {
-    static constexpr bool is_specialized = true;
-    static constexpr bool is_signed = true;
+    static const bool is_specialized = true;
+    static const bool is_signed = true;
 
-    static constexpr float_round_style round_style = round_to_nearest;
+    static const float_round_style round_style = round_to_nearest;
 
-    static constexpr bool is_bounded = true;
+    static const bool is_bounded = true;
 
-    static constexpr int radix = __FLT_RADIX__;
+    static const int radix = __FLT_RADIX__;
 
     static constexpr _T round_error() noexcept
     {
@@ -181,177 +268,38 @@ struct __float_limits
     }
 };
 
-template<typename _T>
-struct __limits_base
-  : __basic_limits<_T>
-{};
-
-template<typename _T>
-struct __limits_base<const _T>
-  : __limits_base<_T>
-{};
-
-template<typename _T>
-struct __limits_base<volatile _T>
-  : __limits_base<_T>
-{};
-
-template<typename _T>
-struct __limits_base<const volatile _T>
-  : __limits_base<_T>
-{};
-
-template<>
-struct __limits_base<bool>
-  : __integral_limits<bool>
-{};
-
-template<>
-struct __limits_base<unsigned char>
-  : __integral_limits<unsigned char>
-{};
-
-template<>
-struct __limits_base<char16_t>
-  : __integral_limits<char16_t>
-{};
-
-template<>
-struct __limits_base<char32_t>
-  : __integral_limits<char32_t>
-{};
-
-template<>
-struct __limits_base<unsigned short>
-  : __integral_limits<unsigned short>
-{};
-
-template<>
-struct __limits_base<unsigned>
-  : __integral_limits<unsigned>
-{};
-
-template<>
-struct __limits_base<unsigned long>
-  : __integral_limits<unsigned long>
-{};
-
-template<>
-struct __limits_base<unsigned long long>
-  : __integral_limits<unsigned long long>
-{};
-
-template<>
-struct __limits_base<signed char>
-  : __integral_limits<signed char>
+template<typename _Traits>
+struct __is_iec559
 {
-    static constexpr int digits = __metallic_fls<signed char, __SCHAR_MAX__>::value;
-    static constexpr int digits10 = digits * 1642637L / 5456722;
-
-    static constexpr signed char max() noexcept
-    {
-        return __SCHAR_MAX__;
-    }
+    static const bool value =
+        _Traits::is_signed &&
+        _Traits::has_infinity &&
+        _Traits::has_quiet_NaN &&
+        _Traits::has_signaling_NaN &&
+        _Traits::has_denorm == denorm_present &&
+        (_Traits::radix == 2 || _Traits::radix == 10) &&
+        _Traits::min_exponent + _Traits::max_exponent == 1;
 };
 
 template<>
-struct __limits_base<char>
-  : __integral_limits<char>
-{
-    static constexpr int digits = __metallic_fls<
-        char,
-        is_signed ? __SCHAR_MAX__ : -1
-    >::value;
-
-    static constexpr int digits10 = digits * 1642637L / 5456722;
-
-    static constexpr char max() noexcept
-    {
-        return is_signed ? numeric_limits<signed char>::max() : -1;
-    }
-};
-
-template<>
-struct __limits_base<short>
-  : __integral_limits<short>
-{
-    static constexpr int digits = __metallic_fls<short, __SHRT_MAX__>::value;
-    static constexpr int digits10 = digits * 1642637L / 5456722;
-
-    static constexpr short max() noexcept
-    {
-        return __SHRT_MAX__;
-    }
-};
-
-template<>
-struct __limits_base<int>
-  : __integral_limits<int>
-{
-    static constexpr int digits = __metallic_fls<int, __INT_MAX__>::value;
-    static constexpr int digits10 = digits * 1642637L / 5456722;
-
-    static constexpr int max() noexcept
-    {
-        return __INT_MAX__;
-    }
-};
-
-template<>
-struct __limits_base<long>
-  : __integral_limits<long>
-{
-    static constexpr int digits = __metallic_fls<long, __LONG_MAX__>::value;
-    static constexpr int digits10 = digits * 1642637L / 5456722;
-
-    static constexpr long max() noexcept
-    {
-        return __LONG_MAX__;
-    }
-};
-
-template<>
-struct __limits_base<long long>
-  : __integral_limits<long long>
-{
-    static constexpr int digits = __metallic_fls<long long, __LONG_LONG_MAX__>::value;
-    static constexpr int digits10 = digits * 1642637L / 5456722;
-
-    static constexpr long long max() noexcept
-    {
-        return __LONG_LONG_MAX__;
-    }
-};
-
-template<>
-struct __limits_base<wchar_t>
-  : __limits_base<__WCHAR_TYPE__>
-{};
-
-template<>
-struct __limits_base<float>
+struct numeric_limits<float>
   : __float_limits<float>
 {
-    static constexpr bool has_infinity = __FLT_HAS_INFINITY__;
-    static constexpr bool has_quiet_NaN = __FLT_HAS_QUIET_NAN__;
-    static constexpr bool has_signaling_NaN = has_quiet_NaN;
+    static const bool has_infinity = __FLT_HAS_INFINITY__;
+    static const bool has_quiet_NaN = __FLT_HAS_QUIET_NAN__;
+    static const bool has_signaling_NaN = has_quiet_NaN;
 
-    static constexpr float_denorm_style has_denorm = float_denorm_style(__FLT_HAS_DENORM__);
+    static const float_denorm_style has_denorm = static_cast<float_denorm_style>(__FLT_HAS_DENORM__);
+    static const bool is_iec559 = __is_iec559<numeric_limits>::value;
 
-    static constexpr int digits = __FLT_MANT_DIG__;
-    static constexpr int digits10 = __FLT_DIG__;
-    static constexpr int max_digits10 = 0.30102999566398119521 * digits + 2;
+    static const int digits = __FLT_MANT_DIG__;
+    static const int digits10 = __FLT_DIG__;
+    static const int max_digits10 = __FLT_DECIMAL_DIG__;
 
-    static constexpr int min_exponent = __FLT_MIN_EXP__;
-    static constexpr int min_exponent10 = __FLT_MIN_10_EXP__;
-    static constexpr int max_exponent = __FLT_MAX_EXP__;
-    static constexpr int max_exponent10 = __FLT_MAX_10_EXP__;
-
-    static constexpr bool is_iec559 =
-        is_signed && has_infinity && has_quiet_NaN &&
-        has_denorm == denorm_present &&
-        (radix == 2 || radix == 10) &&
-        min_exponent + max_exponent == 1;
+    static const int min_exponent = __FLT_MIN_EXP__;
+    static const int min_exponent10 = __FLT_MIN_10_EXP__;
+    static const int max_exponent = __FLT_MAX_EXP__;
+    static const int max_exponent10 = __FLT_MAX_10_EXP__;
 
     static constexpr float min() noexcept
     {
@@ -390,29 +338,24 @@ struct __limits_base<float>
 };
 
 template<>
-struct __limits_base<double>
+struct numeric_limits<double>
   : __float_limits<double>
 {
-    static constexpr bool has_infinity = __DBL_HAS_INFINITY__;
-    static constexpr bool has_quiet_NaN = __DBL_HAS_QUIET_NAN__;
-    static constexpr bool has_signaling_NaN = has_quiet_NaN;
+    static const bool has_infinity = __DBL_HAS_INFINITY__;
+    static const bool has_quiet_NaN = __DBL_HAS_QUIET_NAN__;
+    static const bool has_signaling_NaN = has_quiet_NaN;
 
-    static constexpr float_denorm_style has_denorm = float_denorm_style(__DBL_HAS_DENORM__);
+    static const float_denorm_style has_denorm = static_cast<float_denorm_style>(__DBL_HAS_DENORM__);
+    static const bool is_iec559 = __is_iec559<numeric_limits>::value;
 
-    static constexpr int digits = __DBL_MANT_DIG__;
-    static constexpr int digits10 = __DBL_DIG__;
-    static constexpr int max_digits10 = 0.30102999566398119521 * digits + 2;
+    static const int digits = __DBL_MANT_DIG__;
+    static const int digits10 = __DBL_DIG__;
+    static const int max_digits10 = __DBL_DECIMAL_DIG__;
 
-    static constexpr int min_exponent = __DBL_MIN_EXP__;
-    static constexpr int min_exponent10 = __DBL_MIN_10_EXP__;
-    static constexpr int max_exponent = __DBL_MAX_EXP__;
-    static constexpr int max_exponent10 = __DBL_MAX_10_EXP__;
-
-    static constexpr bool is_iec559 =
-        is_signed && has_infinity && has_quiet_NaN &&
-        has_denorm == denorm_present &&
-        (radix == 2 || radix == 10) &&
-        min_exponent + max_exponent == 1;
+    static const int min_exponent = __DBL_MIN_EXP__;
+    static const int min_exponent10 = __DBL_MIN_10_EXP__;
+    static const int max_exponent = __DBL_MAX_EXP__;
+    static const int max_exponent10 = __DBL_MAX_10_EXP__;
 
     static constexpr double min() noexcept
     {
@@ -451,29 +394,24 @@ struct __limits_base<double>
 };
 
 template<>
-struct __limits_base<long double>
+struct numeric_limits<long double>
   : __float_limits<long double>
 {
-    static constexpr bool has_infinity = __LDBL_HAS_INFINITY__;
-    static constexpr bool has_quiet_NaN = __LDBL_HAS_QUIET_NAN__;
-    static constexpr bool has_signaling_NaN = has_quiet_NaN;
+    static const bool has_infinity = __LDBL_HAS_INFINITY__;
+    static const bool has_quiet_NaN = __LDBL_HAS_QUIET_NAN__;
+    static const bool has_signaling_NaN = has_quiet_NaN;
 
-    static constexpr float_denorm_style has_denorm = float_denorm_style(__LDBL_HAS_DENORM__);
+    static const float_denorm_style has_denorm = static_cast<float_denorm_style>(__LDBL_HAS_DENORM__);
+    static const bool is_iec559 = __is_iec559<numeric_limits>::value;
 
-    static constexpr int digits = __LDBL_MANT_DIG__;
-    static constexpr int digits10 = __LDBL_DIG__;
-    static constexpr int max_digits10 = 0.30102999566398119521 * digits + 2;
+    static const int digits = __LDBL_MANT_DIG__;
+    static const int digits10 = __LDBL_DIG__;
+    static const int max_digits10 = __LDBL_DECIMAL_DIG__;
 
-    static constexpr int min_exponent = __LDBL_MIN_EXP__;
-    static constexpr int min_exponent10 = __LDBL_MIN_10_EXP__;
-    static constexpr int max_exponent = __LDBL_MAX_EXP__;
-    static constexpr int max_exponent10 = __LDBL_MAX_10_EXP__;
-
-    static constexpr bool is_iec559 =
-        is_signed && has_infinity && has_quiet_NaN &&
-        has_denorm == denorm_present &&
-        (radix == 2 || radix == 10) &&
-        min_exponent + max_exponent == 1;
+    static const int min_exponent = __LDBL_MIN_EXP__;
+    static const int min_exponent10 = __LDBL_MIN_10_EXP__;
+    static const int max_exponent = __LDBL_MAX_EXP__;
+    static const int max_exponent10 = __LDBL_MAX_10_EXP__;
 
     static constexpr long double min() noexcept
     {
