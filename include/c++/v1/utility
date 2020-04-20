@@ -161,7 +161,7 @@ struct __ordinal<_T, 7>
 
 template<typename _T, _T _N>
 using make_integer_sequence =
-#ifndef _METALLIC_MAKE_INTEGER_SEQ
+#ifdef _METALLIC_MAKE_INTEGER_SEQ
     __make_integer_seq<integer_sequence, _T, _N>;
 #elif __GNUC__ >= 8
     integer_sequence<_T, __integer_pack(_N)...>;
