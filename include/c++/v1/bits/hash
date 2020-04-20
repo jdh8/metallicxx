@@ -9,8 +9,7 @@ namespace std {
 
 typedef decltype(sizeof(0)) size_t;
 
-static_assert(
-    numeric_limits<size_t>::digits == sizeof(size_t) * numeric_limits<unsigned char>::digits,
+static_assert(numeric_limits<size_t>::digits == sizeof(size_t) * numeric_limits<unsigned char>::digits,
     "size_t with padding bits is unsupported");
 
 template<typename _T>
@@ -28,33 +27,7 @@ struct __poisoned_hash : __hash_base<_T>
     __poisoned_hash& operator=(__poisoned_hash&&) = delete;
 };
 
-template<typename _T>
-struct __identity_hash : __hash_base<_T>
-{
-    size_t operator()(_T __x) const noexcept { return __x; }
-};
-
-template<typename> struct hash;
-
-template<> struct hash<bool> : __identity_hash<bool> {};
-template<> struct hash<char> : __identity_hash<char> {};
-template<> struct hash<signed char> : __identity_hash<signed char> {};
-template<> struct hash<unsigned char> : __identity_hash<unsigned char> {};
-template<> struct hash<char16_t> : __identity_hash<char16_t> {};
-template<> struct hash<char32_t> : __identity_hash<char32_t> {};
-template<> struct hash<wchar_t> : __identity_hash<wchar_t> {};
-template<> struct hash<short> : __identity_hash<short> {};
-template<> struct hash<unsigned short> : __identity_hash<unsigned short> {};
-template<> struct hash<int> : __identity_hash<int> {};
-template<> struct hash<unsigned> : __identity_hash<unsigned> {};
-template<> struct hash<long> : __identity_hash<long> {};
-template<> struct hash<unsigned long> : __identity_hash<unsigned long> {};
-
-#if __cplulsplus > 201703L
-template<> struct hash<char8_t> : __identity_hash<char8_t> {};
-#endif
-
-template<typename _T, size_t = (sizeof(_T) + sizeof(size_t) - 1) / sizeof(size_t)>
+template<typename _T, size_t _N = (sizeof(_T) + sizeof(size_t) - 1) / sizeof(size_t)>
 struct __unaligned_xor_hash;
 
 template<typename _T>
@@ -101,11 +74,15 @@ struct __unaligned_xor_hash<_T, 4> : __hash_base<_T>
     }
 };
 
-template<typename _T, size_t = sizeof(_T) / sizeof(size_t), size_t = sizeof(_T) % sizeof(size_t)>
-struct __aligned_xor_hash : __unaligned_xor_hash<_T> {};
+template<typename _T, size_t = sizeof(_T) / sizeof(size_t)>
+struct __aligned_xor_hash;
 
 template<typename _T>
-struct __aligned_xor_hash<_T, 1, 0> : __hash_base<_T>
+struct __aligned_xor_hash<_T, 0> : __unaligned_xor_hash<_T, 1>
+{};
+
+template<typename _T>
+struct __aligned_xor_hash<_T, 1> : __hash_base<_T>
 {
     size_t operator()(_T __t) const noexcept
     {
@@ -116,7 +93,7 @@ struct __aligned_xor_hash<_T, 1, 0> : __hash_base<_T>
 };
 
 template<typename _T>
-struct __aligned_xor_hash<_T, 2, 0> : __hash_base<_T>
+struct __aligned_xor_hash<_T, 2> : __hash_base<_T>
 {
     size_t operator()(_T __t) const noexcept
     {
@@ -127,7 +104,7 @@ struct __aligned_xor_hash<_T, 2, 0> : __hash_base<_T>
 };
 
 template<typename _T>
-struct __aligned_xor_hash<_T, 4, 0> : __hash_base<_T>
+struct __aligned_xor_hash<_T, 4> : __hash_base<_T>
 {
     size_t operator()(_T __t) const noexcept
     {
@@ -137,29 +114,79 @@ struct __aligned_xor_hash<_T, 4, 0> : __hash_base<_T>
     }
 };
 
-template<> struct hash<long long> : __aligned_xor_hash<long long> {};
-template<> struct hash<unsigned long long> : __aligned_xor_hash<unsigned long long> {};
-#ifdef __SIZEOF_INT128__
-template<> struct hash<__int128> : __aligned_xor_hash<__int128> {};
-template<> struct hash<unsigned __int128> : __aligned_xor_hash<unsigned __int128> {};
+template<typename _T>
+struct __identity_hash : __hash_base<_T>
+{
+    size_t operator()(_T __x) const noexcept { return __x; }
+};
+
+template<typename _T>
+using __longint_hash = typename conditional<
+    (numeric_limits<_T>::digits + numeric_limits<_T>::is_signed) % numeric_limits<size_t>::digits,
+    __unaligned_xor_hash<_T>,
+    __aligned_xor_hash<_T>>::type;
+
+template<typename> struct hash;
+
+template<> struct hash<bool> : __identity_hash<bool> {};
+template<> struct hash<char> : __identity_hash<char> {};
+template<> struct hash<signed char> : __identity_hash<signed char> {};
+template<> struct hash<unsigned char> : __identity_hash<unsigned char> {};
+template<> struct hash<char16_t> : __identity_hash<char16_t> {};
+template<> struct hash<char32_t> : __identity_hash<char32_t> {};
+template<> struct hash<wchar_t> : __identity_hash<wchar_t> {};
+template<> struct hash<short> : __identity_hash<short> {};
+template<> struct hash<unsigned short> : __identity_hash<unsigned short> {};
+template<> struct hash<int> : __identity_hash<int> {};
+template<> struct hash<unsigned> : __identity_hash<unsigned> {};
+template<> struct hash<long> : __identity_hash<long> {};
+template<> struct hash<unsigned long> : __identity_hash<unsigned long> {};
+
+#if __cplulsplus > 201703L
+template<> struct hash<char8_t> : __identity_hash<char8_t> {};
 #endif
 
-template<typename _T, typename _Base>
-struct __fp_hash : _Base
+template<> struct hash<long long> : __longint_hash<long long> {};
+template<> struct hash<unsigned long long> : __longint_hash<unsigned long long> {};
+#ifdef __SIZEOF_INT128__
+template<> struct hash<__int128> : __longint_hash<__int128> {};
+template<> struct hash<unsigned __int128> : __longint_hash<unsigned __int128> {};
+#endif
+
+template<typename _T>
+struct __fp_hash
 {
     size_t operator()(_T __t) const noexcept
     {
-        return __t ? _Base::operator()(__t) : 0;
+        const int __size = numeric_limits<size_t>::digits;
+        const typename conditional<numeric_limits<_T>::is_iec559 && !(__size & (__size - 1)),
+            __aligned_xor_hash<_T>, __unaligned_xor_hash<_T>>::type __f;
+        return __t ? __f(__t) : 0;
     }
 };
 
-template<> struct hash<float> : __fp_hash<float, __aligned_xor_hash<float>> {};
-template<> struct hash<double> : __fp_hash<double, __aligned_xor_hash<double>> {};
+template<> struct hash<float> : __fp_hash<float> {};
+template<> struct hash<double> : __fp_hash<double> {};
 
-template<> struct hash<long double> : __fp_hash<long double, typename conditional<
-    numeric_limits<long double>::digits == 53 || numeric_limits<long double>::digits == 112,
-    __aligned_xor_hash<long double>, __unaligned_xor_hash<long double>>::type>
-{};
+template<>
+struct hash<long double>
+{
+    size_t operator()(long double __t) const noexcept
+    {
+        const int __size = numeric_limits<size_t>::digits;
+        const int __digits = numeric_limits<long double>::digits;
+        const typename conditional<numeric_limits<long double>::is_iec559 &&
+            (__digits == 53 || __digits == 112) &&
+            !(__size & (__size - 1)),
+            __aligned_xor_hash<long double>, __unaligned_xor_hash<long double>>::type __f;
+
+        return __t ? __f(__t) : 0;
+    }
+};
+
+#ifdef __SIZEOF_FLOAT128__
+template<> struct hash<__float128> : __fp_hash<__float128> {};
+#endif
 
 template<> struct hash<decltype(nullptr)> : __hash_base<decltype(nullptr)>
 {
