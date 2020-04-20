@@ -1,0 +1,186 @@
+#ifndef _METALLIC_BITS_HASH
+#define _METALLIC_BITS_HASH
+
+#include <bits/attributes>
+#include <limits>
+#include <type_traits>
+
+namespace std {
+
+typedef decltype(sizeof(0)) size_t;
+
+template<typename _T>
+struct __hash_base
+{
+    _METALLIC_DEPRECATED typedef _T argument_type;
+    _METALLIC_DEPRECATED typedef size_t result_type;
+};
+
+template<typename _T>
+struct __poisoned_hash : __hash_base<_T>
+{
+    __poisoned_hash() = delete;
+    __poisoned_hash(__poisoned_hash&&) = delete;
+    __poisoned_hash& operator=(__poisoned_hash&&) = delete;
+};
+
+template<typename _T>
+struct __identity_hash : __hash_base<_T>
+{
+    size_t operator()(_T __x) const noexcept { return __x; }
+};
+
+template<typename> struct hash;
+
+template<> struct hash<bool> : __identity_hash<bool> {};
+template<> struct hash<char> : __identity_hash<char> {};
+template<> struct hash<signed char> : __identity_hash<signed char> {};
+template<> struct hash<unsigned char> : __identity_hash<unsigned char> {};
+template<> struct hash<char16_t> : __identity_hash<char16_t> {};
+template<> struct hash<char32_t> : __identity_hash<char32_t> {};
+template<> struct hash<wchar_t> : __identity_hash<wchar_t> {};
+template<> struct hash<short> : __identity_hash<short> {};
+template<> struct hash<unsigned short> : __identity_hash<unsigned short> {};
+template<> struct hash<int> : __identity_hash<int> {};
+template<> struct hash<unsigned> : __identity_hash<unsigned> {};
+template<> struct hash<long> : __identity_hash<long> {};
+template<> struct hash<unsigned long> : __identity_hash<unsigned long> {};
+
+#if __cplulsplus > 201703L
+template<> struct hash<char8_t> : __identity_hash<char8_t> {};
+#endif
+
+template<typename _T, size_t = (sizeof(_T) + sizeof(size_t) - 1) / sizeof(size_t)>
+struct __unaligned_xor;
+
+template<typename _T>
+struct __unaligned_xor<_T, 1> : __hash_base<_T>
+{
+    size_t operator()(_T __t) const noexcept
+    {
+        union { _T __x; size_t __y = 0; };
+        __x = __t;
+        return __y;
+    }
+};
+
+template<typename _T>
+struct __unaligned_xor<_T, 2> : __hash_base<_T>
+{
+    size_t operator()(_T __t) const noexcept
+    {
+        union { _T __x; size_t __y[2] = {}; };
+        __x = __t;
+        return __y[0] ^ __y[1];
+    }
+};
+
+template<typename _T>
+struct __unaligned_xor<_T, 3> : __hash_base<_T>
+{
+    size_t operator()(_T __t) const noexcept
+    {
+        union { _T __x; size_t __y[3] = {}; };
+        __x = __t;
+        return __y[0] ^ __y[1] ^ __y[2];
+    }
+};
+
+template<typename _T>
+struct __unaligned_xor<_T, 4> : __hash_base<_T>
+{
+    size_t operator()(_T __t) const noexcept
+    {
+        union { _T __x; size_t __y[4] = {}; };
+        __x = __t;
+        return __y[0] ^ __y[1] ^ __y[2] ^ __y[3];
+    }
+};
+
+template<typename _T, size_t = sizeof(_T) / sizeof(size_t), size_t = sizeof(_T) % sizeof(size_t)>
+struct __aligned_xor : __unaligned_xor<_T> {};
+
+template<typename _T>
+struct __aligned_xor<_T, 1, 0> : __hash_base<_T>
+{
+    size_t operator()(_T __t) const noexcept
+    {
+        union { _T __x; size_t __y; };
+        __x = __t;
+        return __y;
+    }
+};
+
+template<typename _T>
+struct __aligned_xor<_T, 2, 0> : __hash_base<_T>
+{
+    size_t operator()(_T __t) const noexcept
+    {
+        union { _T __x; size_t __y[2]; };
+        __x = __t;
+        return __y[0] ^ __y[1];
+    }
+};
+
+template<typename _T>
+struct __aligned_xor<_T, 4, 0> : __hash_base<_T>
+{
+    size_t operator()(_T __t) const noexcept
+    {
+        union { _T __x; size_t __y[4]; };
+        __x = __t;
+        return __y[0] ^ __y[1] ^ __y[2] ^ __y[3];
+    }
+};
+
+template<typename _T, typename _Base>
+struct __fp_hash : _Base
+{
+    size_t operator()(_T __t) const noexcept
+    {
+        return __t ? _Base::operator()(__t) : 0;
+    }
+};
+
+template<> struct hash<float> : __fp_hash<float, __aligned_xor<float>> {};
+template<> struct hash<double> : __fp_hash<double, __aligned_xor<double>> {};
+
+template<> struct hash<long double> : __fp_hash<long double, typename conditional<
+    numeric_limits<long double>::digits == 53 || numeric_limits<long double>::digits == 112,
+    __aligned_xor<long double>, __unaligned_xor<long double>>::type>
+{};
+
+template<> struct hash<decltype(nullptr)> : __hash_base<decltype(nullptr)>
+{
+    size_t operator()(decltype(nullptr)) const noexcept { return 0; }
+};
+
+template<typename _T>
+struct hash<_T*> : __hash_base<_T*>
+{
+    size_t operator()(_T* __x) const noexcept { return reinterpret_cast<size_t>(__x); }
+};
+
+template<typename _T, bool = is_enum<_T>::value>
+struct __enum_hash : __hash_base<_T>
+{
+    size_t operator()(_T __x) const noexcept
+    {
+        typedef typename underlying_type<_T>::type _U;
+        return hash<_U>()(static_cast<_U>(__x));
+    }
+};
+
+template<typename _T>
+struct __enum_hash<_T, false> : __poisoned_hash<_T>
+{};
+
+template<typename _T>
+struct hash : __enum_hash<_T>
+{};
+
+} // std
+
+#endif // <bits/hash>
+
+// vim: ft=cpp

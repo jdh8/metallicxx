@@ -1,6 +1,7 @@
 #ifndef _METALLIC_OPTIONAL
 #define _METALLIC_OPTIONAL
 
+#include <bits/hash>
 #include <bits/sfinae>
 #include <exception>
 #include <new>
