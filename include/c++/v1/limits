@@ -127,23 +127,23 @@ struct __integral_limits
 {
     static constexpr bool is_specialized = true;
 
-    static constexpr bool is_signed = _T(-1) < 0;
+    static constexpr bool is_signed = static_cast<_T>(-1) < 0;
     static constexpr bool is_integer = true;
     static constexpr bool is_exact = true;
 
     static constexpr bool is_bounded = true;
     static constexpr bool is_modulo = !is_signed;
 
-    static constexpr int digits = __metallic_fls<_T, -1>::value;
+    static constexpr int digits = __metallic_fls<_T, static_cast<_T>(-1)>::value;
     static constexpr int digits10 = digits * 1642637L / 5456722;
 
     static constexpr int radix = 2;
 
-    static constexpr bool traps = _T(2) == 2;
+    static constexpr bool traps = static_cast<_T>(2) == 2;
 
     static constexpr _T min() noexcept
     {
-        return is_signed * (-numeric_limits<_T>::max() - !~_T(-1));
+        return is_signed * (-numeric_limits<_T>::max() - !~static_cast<_T>(-1));
     }
 
     static constexpr _T lowest() noexcept
@@ -236,7 +236,6 @@ struct __limits_base<unsigned long>
   : __integral_limits<unsigned long>
 {};
 
-__extension__
 template<>
 struct __limits_base<unsigned long long>
   : __integral_limits<unsigned long long>
@@ -311,7 +310,6 @@ struct __limits_base<long>
     }
 };
 
-__extension__
 template<>
 struct __limits_base<long long>
   : __integral_limits<long long>
