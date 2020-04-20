@@ -110,13 +110,13 @@ struct __basic_limits
 };
 
 template<typename _T, _T __x, bool = (__x > 0)>
-struct __meta_fls
+struct __metallic_fls
 {
-    static constexpr int value = __meta_fls<_T, (__x >> 1)>::value + 1;
+    static constexpr int value = __metallic_fls<_T, (__x >> 1)>::value + 1;
 };
 
 template<typename _T, _T __x>
-struct __meta_fls<_T, __x, false>
+struct __metallic_fls<_T, __x, false>
 {
     static constexpr int value = 0;
 };
@@ -134,7 +134,7 @@ struct __integral_limits
     static constexpr bool is_bounded = true;
     static constexpr bool is_modulo = !is_signed;
 
-    static constexpr int digits = __meta_fls<_T, -1>::value;
+    static constexpr int digits = __metallic_fls<_T, -1>::value;
     static constexpr int digits10 = digits * 1642637L / 5456722;
 
     static constexpr int radix = 2;
@@ -246,7 +246,7 @@ template<>
 struct __limits_base<signed char>
   : __integral_limits<signed char>
 {
-    static constexpr int digits = __meta_fls<signed char, __SCHAR_MAX__>::value;
+    static constexpr int digits = __metallic_fls<signed char, __SCHAR_MAX__>::value;
     static constexpr int digits10 = digits * 1642637L / 5456722;
 
     static constexpr signed char max() noexcept
@@ -259,7 +259,7 @@ template<>
 struct __limits_base<char>
   : __integral_limits<char>
 {
-    static constexpr int digits = __meta_fls<
+    static constexpr int digits = __metallic_fls<
         char,
         is_signed ? __SCHAR_MAX__ : -1
     >::value;
@@ -276,7 +276,7 @@ template<>
 struct __limits_base<short>
   : __integral_limits<short>
 {
-    static constexpr int digits = __meta_fls<short, __SHRT_MAX__>::value;
+    static constexpr int digits = __metallic_fls<short, __SHRT_MAX__>::value;
     static constexpr int digits10 = digits * 1642637L / 5456722;
 
     static constexpr short max() noexcept
@@ -289,7 +289,7 @@ template<>
 struct __limits_base<int>
   : __integral_limits<int>
 {
-    static constexpr int digits = __meta_fls<int, __INT_MAX__>::value;
+    static constexpr int digits = __metallic_fls<int, __INT_MAX__>::value;
     static constexpr int digits10 = digits * 1642637L / 5456722;
 
     static constexpr int max() noexcept
@@ -302,7 +302,7 @@ template<>
 struct __limits_base<long>
   : __integral_limits<long>
 {
-    static constexpr int digits = __meta_fls<long, __LONG_MAX__>::value;
+    static constexpr int digits = __metallic_fls<long, __LONG_MAX__>::value;
     static constexpr int digits10 = digits * 1642637L / 5456722;
 
     static constexpr long max() noexcept
@@ -316,7 +316,7 @@ template<>
 struct __limits_base<long long>
   : __integral_limits<long long>
 {
-    static constexpr int digits = __meta_fls<long long, __LONG_LONG_MAX__>::value;
+    static constexpr int digits = __metallic_fls<long long, __LONG_LONG_MAX__>::value;
     static constexpr int digits10 = digits * 1642637L / 5456722;
 
     static constexpr long long max() noexcept
