@@ -9,6 +9,10 @@ namespace std {
 
 typedef decltype(sizeof(0)) size_t;
 
+static_assert(
+    numeric_limits<size_t>::digits == sizeof(size_t) * numeric_limits<unsigned char>::digits,
+    "size_t with padding bits is unsupported");
+
 template<typename _T>
 struct __hash_base
 {
@@ -51,10 +55,10 @@ template<> struct hash<char8_t> : __identity_hash<char8_t> {};
 #endif
 
 template<typename _T, size_t = (sizeof(_T) + sizeof(size_t) - 1) / sizeof(size_t)>
-struct __unaligned_xor;
+struct __unaligned_xor_hash;
 
 template<typename _T>
-struct __unaligned_xor<_T, 1> : __hash_base<_T>
+struct __unaligned_xor_hash<_T, 1> : __hash_base<_T>
 {
     size_t operator()(_T __t) const noexcept
     {
@@ -65,7 +69,7 @@ struct __unaligned_xor<_T, 1> : __hash_base<_T>
 };
 
 template<typename _T>
-struct __unaligned_xor<_T, 2> : __hash_base<_T>
+struct __unaligned_xor_hash<_T, 2> : __hash_base<_T>
 {
     size_t operator()(_T __t) const noexcept
     {
@@ -76,7 +80,7 @@ struct __unaligned_xor<_T, 2> : __hash_base<_T>
 };
 
 template<typename _T>
-struct __unaligned_xor<_T, 3> : __hash_base<_T>
+struct __unaligned_xor_hash<_T, 3> : __hash_base<_T>
 {
     size_t operator()(_T __t) const noexcept
     {
@@ -87,7 +91,7 @@ struct __unaligned_xor<_T, 3> : __hash_base<_T>
 };
 
 template<typename _T>
-struct __unaligned_xor<_T, 4> : __hash_base<_T>
+struct __unaligned_xor_hash<_T, 4> : __hash_base<_T>
 {
     size_t operator()(_T __t) const noexcept
     {
@@ -98,10 +102,10 @@ struct __unaligned_xor<_T, 4> : __hash_base<_T>
 };
 
 template<typename _T, size_t = sizeof(_T) / sizeof(size_t), size_t = sizeof(_T) % sizeof(size_t)>
-struct __aligned_xor : __unaligned_xor<_T> {};
+struct __aligned_xor_hash : __unaligned_xor_hash<_T> {};
 
 template<typename _T>
-struct __aligned_xor<_T, 1, 0> : __hash_base<_T>
+struct __aligned_xor_hash<_T, 1, 0> : __hash_base<_T>
 {
     size_t operator()(_T __t) const noexcept
     {
@@ -112,7 +116,7 @@ struct __aligned_xor<_T, 1, 0> : __hash_base<_T>
 };
 
 template<typename _T>
-struct __aligned_xor<_T, 2, 0> : __hash_base<_T>
+struct __aligned_xor_hash<_T, 2, 0> : __hash_base<_T>
 {
     size_t operator()(_T __t) const noexcept
     {
@@ -123,7 +127,7 @@ struct __aligned_xor<_T, 2, 0> : __hash_base<_T>
 };
 
 template<typename _T>
-struct __aligned_xor<_T, 4, 0> : __hash_base<_T>
+struct __aligned_xor_hash<_T, 4, 0> : __hash_base<_T>
 {
     size_t operator()(_T __t) const noexcept
     {
@@ -132,6 +136,13 @@ struct __aligned_xor<_T, 4, 0> : __hash_base<_T>
         return __y[0] ^ __y[1] ^ __y[2] ^ __y[3];
     }
 };
+
+template<> struct hash<long long> : __aligned_xor_hash<long long> {};
+template<> struct hash<unsigned long long> : __aligned_xor_hash<unsigned long long> {};
+#ifdef __SIZEOF_INT128__
+template<> struct hash<__int128> : __aligned_xor_hash<__int128> {};
+template<> struct hash<unsigned __int128> : __aligned_xor_hash<unsigned __int128> {};
+#endif
 
 template<typename _T, typename _Base>
 struct __fp_hash : _Base
@@ -142,12 +153,12 @@ struct __fp_hash : _Base
     }
 };
 
-template<> struct hash<float> : __fp_hash<float, __aligned_xor<float>> {};
-template<> struct hash<double> : __fp_hash<double, __aligned_xor<double>> {};
+template<> struct hash<float> : __fp_hash<float, __aligned_xor_hash<float>> {};
+template<> struct hash<double> : __fp_hash<double, __aligned_xor_hash<double>> {};
 
 template<> struct hash<long double> : __fp_hash<long double, typename conditional<
     numeric_limits<long double>::digits == 53 || numeric_limits<long double>::digits == 112,
-    __aligned_xor<long double>, __unaligned_xor<long double>>::type>
+    __aligned_xor_hash<long double>, __unaligned_xor_hash<long double>>::type>
 {};
 
 template<> struct hash<decltype(nullptr)> : __hash_base<decltype(nullptr)>
