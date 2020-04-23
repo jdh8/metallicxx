@@ -204,26 +204,14 @@ struct hash : __enum_hash<_T>
 {};
 
 #if __cplusplus > 201402L
-template<typename _T, typename = void>
-struct __has_enabled_hash
-  : false_type
-{};
-
-template<typename _T>
-struct __has_enabled_hash<_T, void_t<invoke_result_t<hash<_T>, _T>>>
-  : bool_constant<
-        is_convertible<invoke_result_t<hash<_T>, _T>, size_t>::value &&
-        is_default_constructible<hash<_T>>::value &&
-        is_copy_constructible<hash<_T>>::value &&
-        is_copy_assignable<hash<_T>>::value &&
-        is_destructible<hash<_T>>::value>
-{};
-
 template<typename _T, typename>
 using __enable_hash_impl = _T;
 
-template<typename _T, typename... _Keys>
-using __enable_hash = __enable_hash_impl<_T, __enable_if_t<conjunction<__has_enabled_hash<_Keys>...>::value>>;
+template<typename _T, typename... _K>
+using __enable_hash = __enable_hash_impl<_T, void_t<
+    decltype(declval<size_t(size_t)>()(hash<_K>()(declval<_K>())))...,
+    decltype(hash<_K>{ declval<const hash<_K>&>() })...,
+    decltype(declval<hash<_K>&>() = declval<const hash<_K>&>())...>>;
 #else
 template<typename _T, typename...>
 using __enable_hash = _T;
