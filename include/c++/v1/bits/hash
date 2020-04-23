@@ -173,10 +173,12 @@ template<> struct hash<long double> : __fp_hash<long double> {};
 __extension__ template<> struct hash<__float128> : __fp_hash<__float128, !(128 % numeric_limits<size_t>::digits)> {};
 #endif
 
+#if __cplusplus > 201402L
 template<> struct hash<decltype(nullptr)> : __hash_base<decltype(nullptr)>
 {
     size_t operator()(decltype(nullptr)) const noexcept { return 0; }
 };
+#endif
 
 template<typename _T>
 struct hash<_T*> : __hash_base<_T*>
