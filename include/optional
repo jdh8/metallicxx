@@ -699,6 +699,16 @@ constexpr bool operator>=(const _T& __x, const optional<_U>& __y)
     return __y <= __x;
 }
 
+template<typename _T>
+struct hash<__enable_hash<optional<_T>, remove_const_t<_T>>>
+  : __hash_base<optional<_T>>
+{
+    size_t operator()(const optional<_T>& __x) const
+    {
+        return __x ? hash<remove_const_t<_T>>()(*__x) : -421;
+    }
+};
+
 } // std
 
 #endif // <optional>

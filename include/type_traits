@@ -23,6 +23,11 @@ struct integral_constant
 typedef integral_constant<bool, true> true_type;
 typedef integral_constant<bool, false> false_type;
 
+#if __cplusplus > 201402L
+template<bool _Condition>
+using bool_constant = integral_constant<bool, _Condition>;
+#endif
+
 ///////////////////////////// Conditionals /////////////////////////////
 
 template<bool, typename = void>
@@ -1288,6 +1293,47 @@ template<typename _T>
 struct is_nothrow_swappable
   : __nothrow_swappable<_T>
 {};
+#endif // C++ > 14
+
+////////////////////////// Logical operations //////////////////////////
+
+#if __cplusplus > 201402L
+
+template<typename...>
+struct conjunction
+  : true_type
+{};
+
+template<typename _T>
+struct conjunction<_T>
+  : _T
+{};
+
+template<typename _T, typename... _Rest>
+struct conjunction<_T, _Rest...>
+  : conditional_t<static_cast<bool>(_T::value), conjunction<_Rest...>, _T>
+{};
+
+template<typename...>
+struct disjunction
+  : false_type
+{};
+
+template<typename _T>
+struct disjunction<_T>
+  : _T
+{};
+
+template<typename _T, typename... _Rest>
+struct disjunction<_T, _Rest...>
+  : conditional_t<static_cast<bool>(_T::value), _T, disjunction<_Rest...>>
+{};
+
+template<typename _T>
+struct negation
+  : bool_constant<!static_cast<bool>(_T::value)>
+{};
+
 #endif // C++ > 14
 
 } // std
