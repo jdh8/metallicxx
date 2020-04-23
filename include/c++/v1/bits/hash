@@ -1,7 +1,6 @@
 #ifndef _METALLIC_BITS_HASH
 #define _METALLIC_BITS_HASH
 
-#include <bits/attributes>
 #include <limits>
 #include <type_traits>
 
@@ -28,8 +27,8 @@ static_assert(__integer_width<size_t>() == __occupied_bits<size_t>(), "size_t wi
 template<typename _T>
 struct __hash_base
 {
-    _METALLIC_DEPRECATED typedef _T argument_type;
-    _METALLIC_DEPRECATED typedef size_t result_type;
+    [[deprecated]] typedef _T argument_type;
+    [[deprecated]] typedef size_t result_type;
 };
 
 template<typename _T>
