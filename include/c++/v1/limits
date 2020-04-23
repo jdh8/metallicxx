@@ -244,6 +244,18 @@ struct numeric_limits<wchar_t>
   : numeric_limits<__WCHAR_TYPE__>
 {};
 
+#ifdef __SIZEOF_INT128__
+__extension__ template<>
+struct numeric_limits<unsigned __int128>
+  : __integral_limits<unsigned __int128>
+{};
+
+__extension__ template<>
+struct numeric_limits<__int128>
+  : __integral_limits<__int128, (static_cast<unsigned __int128>(-1) >> 1)>
+{};
+#endif
+
 template<typename _T>
 struct __float_limits
   : __basic_limits<_T>

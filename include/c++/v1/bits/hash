@@ -9,8 +9,21 @@ namespace std {
 
 typedef decltype(sizeof(0)) size_t;
 
-static_assert(numeric_limits<size_t>::digits == sizeof(size_t) * numeric_limits<unsigned char>::digits,
-    "size_t with padding bits is unsupported");
+template<typename _T>
+constexpr __enable_if_t<numeric_limits<_T>::is_integer && is_standard_layout<_T>::value, size_t>
+__integer_width(_T = {})
+{
+    return numeric_limits<_T>::digits + numeric_limits<_T>::is_signed;
+}
+
+template<typename _T>
+constexpr __enable_if_t<is_standard_layout<_T>::value, size_t>
+__occupied_bits(_T = {})
+{
+    return sizeof(_T) * numeric_limits<unsigned char>::digits;
+}
+
+static_assert(__integer_width<size_t>() == __occupied_bits<size_t>(), "size_t with padding bits is unsupported");
 
 template<typename _T>
 struct __hash_base
@@ -112,34 +125,35 @@ struct __identity_hash : __hash_base<_T>
 };
 
 template<typename _T>
-using __longint_hash = __xor_hash<_T,
-    !(numeric_limits<_T>::digits + numeric_limits<_T>::is_signed) % numeric_limits<size_t>::digits>;
+using __integer_hash = __conditional_t<__integer_width<_T>() <= __integer_width<size_t>(),
+    __identity_hash<_T>,
+    __xor_hash<_T, __integer_width<_T>() == __occupied_bits<_T>() && !(__integer_width<_T>() % __integer_width<size_t>())>>;
 
 template<typename> struct hash;
 
-template<> struct hash<bool> : __identity_hash<bool> {};
-template<> struct hash<char> : __identity_hash<char> {};
-template<> struct hash<signed char> : __identity_hash<signed char> {};
-template<> struct hash<unsigned char> : __identity_hash<unsigned char> {};
-template<> struct hash<char16_t> : __identity_hash<char16_t> {};
-template<> struct hash<char32_t> : __identity_hash<char32_t> {};
-template<> struct hash<wchar_t> : __identity_hash<wchar_t> {};
-template<> struct hash<short> : __identity_hash<short> {};
-template<> struct hash<unsigned short> : __identity_hash<unsigned short> {};
-template<> struct hash<int> : __identity_hash<int> {};
-template<> struct hash<unsigned> : __identity_hash<unsigned> {};
-template<> struct hash<long> : __identity_hash<long> {};
-template<> struct hash<unsigned long> : __identity_hash<unsigned long> {};
+template<> struct hash<bool> : __integer_hash<bool> {};
+template<> struct hash<char> : __integer_hash<char> {};
+template<> struct hash<signed char> : __integer_hash<signed char> {};
+template<> struct hash<unsigned char> : __integer_hash<unsigned char> {};
+template<> struct hash<char16_t> : __integer_hash<char16_t> {};
+template<> struct hash<char32_t> : __integer_hash<char32_t> {};
+template<> struct hash<wchar_t> : __integer_hash<wchar_t> {};
+template<> struct hash<short> : __integer_hash<short> {};
+template<> struct hash<unsigned short> : __integer_hash<unsigned short> {};
+template<> struct hash<int> : __integer_hash<int> {};
+template<> struct hash<unsigned> : __integer_hash<unsigned> {};
+template<> struct hash<long> : __integer_hash<long> {};
+template<> struct hash<unsigned long> : __integer_hash<unsigned long> {};
 
 #if __cplulsplus > 201703L
-template<> struct hash<char8_t> : __identity_hash<char8_t> {};
+template<> struct hash<char8_t> : __integer_hash<char8_t> {};
 #endif
 
-template<> struct hash<long long> : __longint_hash<long long> {};
-template<> struct hash<unsigned long long> : __longint_hash<unsigned long long> {};
+template<> struct hash<long long> : __integer_hash<long long> {};
+template<> struct hash<unsigned long long> : __integer_hash<unsigned long long> {};
 #ifdef __SIZEOF_INT128__
-template<> struct hash<__int128> : __longint_hash<__int128> {};
-template<> struct hash<unsigned __int128> : __longint_hash<unsigned __int128> {};
+__extension__ template<> struct hash<__int128> : __integer_hash<__int128> {};
+__extension__ template<> struct hash<unsigned __int128> : __integer_hash<unsigned __int128> {};
 #endif
 
 template<typename _T>

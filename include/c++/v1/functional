@@ -1,0 +1,12 @@
+#ifndef _METALLIC_FUNCTIONAL
+#define _METALLIC_FUNCTIONAL
+
+#include <bits/hash>
+
+namespace std {
+
+} // std
+
+#endif // <functional>
+
+// vim: ft=cpp

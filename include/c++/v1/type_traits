@@ -329,13 +329,13 @@ struct __make_unsigned_base<long long>
 };
 
 #ifdef __SIZEOF_INT128__
-template<>
+__extension__ template<>
 struct __make_signed_base<unsigned __int128>
 {
     typedef __int128 type;
 };
 
-template<>
+__extension__ template<>
 struct __make_unsigned_base<__int128>
 {
     typedef unsigned __int128 type;
