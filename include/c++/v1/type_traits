@@ -50,6 +50,9 @@ struct conditional<false, _T, _F>
     typedef _F type;
 };
 
+template<bool _Condition, typename _T, typename _F>
+using __conditional_t = typename conditional<_Condition, _T, _F>::type;
+
 ///////////////////////// Type transformations /////////////////////////
 
 typedef decltype(sizeof(0)) size_t;

@@ -43,7 +43,7 @@ constexpr __remove_reference_t<_T>&& move(_T&& __x) noexcept
 }
 
 template<typename _T>
-typename conditional<!is_nothrow_move_constructible<_T>::value && is_copy_constructible<_T>::value, const _T&, _T&&>::type
+__conditional_t<!is_nothrow_move_constructible<_T>::value && is_copy_constructible<_T>::value, const _T&, _T&&>
 move_if_noexcept(_T& __x) noexcept
 {
     return static_cast<_T&&>(__x);
