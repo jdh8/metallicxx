@@ -1101,11 +1101,20 @@ struct common_type<_T, _U, _V...>
   : __common_type_multiary<void, _T, _U, _V...>
 {};
 
-template<typename _T>
-struct underlying_type
+template<typename _T, bool = is_enum<_T>::value>
+struct __underlying_type_base
 {
     typedef __underlying_type(_T) type;
 };
+
+template<typename _T>
+struct __underlying_type_base<_T, false>
+{};
+
+template<typename _T>
+struct underlying_type
+  : __underlying_type_base<_T>
+{};
 
 template<typename, typename, typename...>
 struct __invoke_result_base;
