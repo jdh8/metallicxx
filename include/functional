@@ -65,6 +65,60 @@ reference_wrapper<const _T> cref(reference_wrapper<_T> __x)
 template<typename _T>
 void cref(const _T&&) = delete;
 
+template<typename _Base, typename _T>
+constexpr __enable_if_t<is_base_of<_Base, typename decay<_T>::type>::value, _T&&>
+__invoke_dereference(_T&& __x) noexcept
+{
+    return static_cast<_T&&>(__x);
+}
+
+template<typename _Base, typename _T>
+constexpr _T& __invoke_dereference(reference_wrapper<_T> __x) noexcept
+{
+    return __x;
+}
+
+template<typename _Base, typename _T>
+constexpr __enable_if_t<!is_base_of<_Base, typename decay<_T>::type>::value, decltype(*declval<_T>())>
+__invoke_dereference(_T&& __x) noexcept(noexcept(*declval<_T>()))
+{
+    return *static_cast<_T&&>(__x);
+}
+
+template<typename _T, typename _Base, typename _U>
+constexpr auto __invoke(_T _Base::* __x, _U&& __y)
+noexcept(noexcept(__invoke_dereference<_Base>(declval<_U>()).*__x)) ->
+__enable_if_t<!is_function<_T>::value, decltype(__invoke_dereference<_Base>(declval<_U>()).*__x)>
+{
+    return __invoke_dereference<_Base>(static_cast<_U&&>(__y)).*__x;
+}
+
+template<typename _T, typename _Base, typename _U, typename..._Args>
+constexpr auto __invoke(_T _Base::* __x, _U&& __y, _Args&&... __args)
+noexcept(noexcept((__invoke_dereference<_Base>(declval<_U>()).*__x)(declval<_Args>()...))) ->
+__enable_if_t<is_function<_T>::value, decltype((__invoke_dereference<_Base>(declval<_U>()).*__x)(declval<_Args>()...))>
+{
+    return (__invoke_dereference<_Base>(static_cast<_U&&>(__y)).*__x)(static_cast<_Args&&>(__args)...);
+}
+
+template<typename _F, typename..._Args>
+constexpr decltype(declval<_F>()(declval<_Args>()...))
+__invoke(_F&& __f, _Args&&... __args)
+noexcept(noexcept(declval<_F>()(declval<_Args>()...)))
+{
+    return static_cast<_F&&>(__f)(static_cast<_Args&&>(__args)...);
+}
+
+#if __cplusplus > 201402L
+template<typename _F, typename..._Args>
+constexpr decltype(__invoke(declval<_F>(), declval<_Args>()...))
+invoke(_F&& __f, _Args&&... __args)
+noexcept(noexcept(__invoke(declval<_F>(), declval<_Args>()...)))
+{
+    return __invoke(static_cast<_F&&>(__f), static_cast<_Args&&>(__args)...);
+}
+#endif
+
 } // std
 
 #endif // <functional>

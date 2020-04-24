@@ -1139,36 +1139,41 @@ struct underlying_type
 template<typename>
 class reference_wrapper;
 
-template<typename _T, typename _Base, typename _U>
-constexpr __enable_if_t<is_base_of<_Base, typename decay<_U>::type>::value, _U&&>
-__invoke_dereference(_T _Base::*, _U&&) noexcept;
+template<typename _Base, typename _T>
+constexpr __enable_if_t<is_base_of<_Base, typename decay<_T>::type>::value, _T&&>
+__invoke_dereference(_T&&) noexcept;
+
+template<typename _Base, typename _T>
+constexpr _T& __invoke_dereference(reference_wrapper<_T>) noexcept;
+
+template<typename _Base, typename _T>
+constexpr __enable_if_t<!is_base_of<_Base, typename decay<_T>::type>::value, decltype(*declval<_T>())>
+__invoke_dereference(_T&&) noexcept(noexcept(*declval<_T>()));
+
+template<typename _Base, typename _T>
+constexpr __enable_if_t<is_base_of<_Base, typename decay<_T>::type>::value, _T&&>
+__invoke_dereference(_T&& __x) noexcept;
+
+template<typename _Base, typename _T>
+constexpr _T& __invoke_dereference(reference_wrapper<_T> __x) noexcept;
+
+template<typename _Base, typename _T>
+constexpr __enable_if_t<!is_base_of<_Base, typename decay<_T>::type>::value, decltype(*declval<_T>())>
+__invoke_dereference(_T&& __x) noexcept(noexcept(*declval<_T>()));
 
 template<typename _T, typename _Base, typename _U>
-constexpr _U& __invoke_dereference(_T _Base::*, reference_wrapper<_U>) noexcept;
-
-template<typename _T, typename _Base, typename _U>
-constexpr __enable_if_t<!is_base_of<_Base, typename decay<_U>::type>::value, decltype(*declval<_U>())>
-__invoke_dereference(_T _Base::*, _U&&)
-noexcept(noexcept(*declval<_U>()));
-
-template<typename _T, typename _Base, typename _U>
-constexpr auto __invoke_member(_T _Base::* __x, _U&&)
-noexcept(noexcept(__invoke_dereference(__x, declval<_U>()).*__x)) ->
-decltype(__invoke_dereference(__x, declval<_U>()).*__x);
-
-template<typename _T, typename _Base, typename _U>
-constexpr auto __invoke(_T _Base::* __x, _U&&)
-noexcept(noexcept(__invoke_member(__x, declval<_U>()))) ->
-__enable_if_t<!is_function<_T>::value, decltype(__invoke_member(__x, declval<_U>()))>;
+constexpr auto __invoke(_T _Base::* __x, _U&& __y)
+noexcept(noexcept(__invoke_dereference<_Base>(declval<_U>()).*__x)) ->
+__enable_if_t<!is_function<_T>::value, decltype(__invoke_dereference<_Base>(declval<_U>()).*__x)>;
 
 template<typename _T, typename _Base, typename _U, typename..._Args>
-constexpr auto __invoke(_T _Base::* __x, _U&&, _Args&&...)
-noexcept(noexcept(__invoke_member(__x, declval<_U>())(declval<_Args>()...))) ->
-__enable_if_t<is_function<_T>::value, decltype(__invoke_member(__x, declval<_U>())(declval<_Args>()...))>;
+constexpr auto __invoke(_T _Base::* __x, _U&& __y, _Args&&... __args)
+noexcept(noexcept((__invoke_dereference<_Base>(declval<_U>()).*__x)(declval<_Args>()...))) ->
+__enable_if_t<is_function<_T>::value, decltype((__invoke_dereference<_Base>(declval<_U>()).*__x)(declval<_Args>()...))>;
 
 template<typename _F, typename..._Args>
 constexpr decltype(declval<_F>()(declval<_Args>()...))
-__invoke(_F&&, _Args&&...)
+__invoke(_F&& __f, _Args&&... __args)
 noexcept(noexcept(declval<_F>()(declval<_Args>()...)));
 
 template<typename, typename, typename...>
