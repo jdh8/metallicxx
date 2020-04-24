@@ -204,14 +204,14 @@ struct hash : __enum_hash<_T>
 {};
 
 #if __cplusplus > 201402L
-template<typename _T, typename>
-using __enable_hash_impl = _T;
+template<typename _T, typename...>
+using __car_t = _T;
 
 template<typename _T, typename... _K>
-using __enable_hash = __enable_hash_impl<_T, void_t<
+using __enable_hash = __car_t<_T,
     decltype(declval<size_t(size_t)>()(hash<_K>()(declval<_K>())))...,
     decltype(hash<_K>{ declval<const hash<_K>&>() })...,
-    decltype(declval<hash<_K>&>() = declval<const hash<_K>&>())...>>;
+    decltype(declval<hash<_K>&>() = declval<const hash<_K>&>())...>;
 #else
 template<typename _T, typename...>
 using __enable_hash = _T;
