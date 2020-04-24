@@ -576,14 +576,34 @@ struct is_member_pointer<_T _U::* const volatile>
   : true_type
 {};
 
-template<typename _T>
+template<typename>
 struct is_member_function_pointer
-  : integral_constant<bool, is_member_pointer<_T>::value && is_function<_T>::value>
+  : false_type
+{};
+
+template<typename _T, class _U>
+struct is_member_function_pointer<_T _U::*>
+  : is_function<_T>
+{};
+
+template<typename _T, class _U>
+struct is_member_function_pointer<_T _U::* const>
+  : is_function<_T>
+{};
+
+template<typename _T, class _U>
+struct is_member_function_pointer<_T _U::* volatile>
+  : is_function<_T>
+{};
+
+template<typename _T, class _U>
+struct is_member_function_pointer<_T _U::* const volatile>
+  : is_function<_T>
 {};
 
 template<typename _T>
 struct is_member_object_pointer
-  : integral_constant<bool, is_member_pointer<_T>::value && !is_function<_T>::value>
+  : integral_constant<bool, is_member_pointer<_T>::value && !is_member_function_pointer<_T>::value>
 {};
 
 /////////////////////////// Type properties ////////////////////////////
