@@ -1136,13 +1136,41 @@ struct underlying_type
   : __underlying_type_base<_T>
 {};
 
+template<typename>
+class reference_wrapper;
+
+template<typename _T, typename _Base, typename _U>
+__enable_if_t<is_base_of<_Base, typename decay<_U>::type>::value, _U&&>
+__invoke_dereference(_T _Base::*, _U&&);
+
+template<typename _T, typename _Base, typename _U>
+_U& __invoke_dereference(_T _Base::*, reference_wrapper<_U>);
+
+template<typename _T, typename _Base, typename _U>
+__enable_if_t<!is_base_of<_Base, typename decay<_U>::type>::value, decltype(*declval<_U>())>
+__invoke_dereference(_T _Base::*, _U&&);
+
+template<typename _T, typename _Base, typename _U>
+auto __invoke_member(_T _Base::* __x, _U&&) -> decltype(__invoke_dereference(__x, declval<_U>()).*__x);
+
+template<typename _T, typename _Base, typename _U>
+auto __invoke(_T _Base::* __x, _U&&) ->
+__enable_if_t<!is_function<_T>::value, decltype(__invoke_member(__x, declval<_U>()))>;
+
+template<typename _T, typename _Base, typename _U, typename..._Args>
+auto __invoke(_T _Base::* __x, _U&&, _Args&&...) ->
+__enable_if_t<is_function<_T>::value, decltype(__invoke_member(__x, declval<_U>())(declval<_Args>()...))>;
+
+template<typename _F, typename..._Args>
+decltype(declval<_F>()(declval<_Args>()...)) __invoke(_F&&, _Args&&...);
+
 template<typename, typename, typename...>
 struct __invoke_result_base;
 
 template<typename _F, typename..._Args>
-struct __invoke_result_base<__void_t<decltype(declval<_F>()(declval<_Args>()...))>, _F, _Args...>
+struct __invoke_result_base<decltype(static_cast<void>(__invoke(declval<_F>(), declval<_Args>()...))), _F, _Args...>
 {
-    typedef decltype(declval<_F>()(declval<_Args>()...)) type;
+    typedef decltype(__invoke(declval<_F>(), declval<_Args>()...)) type;
 };
 
 template<typename _F, typename..._Args>
