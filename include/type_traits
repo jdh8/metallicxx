@@ -861,7 +861,7 @@ struct __is_assignable_base
 {};
 
 template<typename _T, typename _U>
-struct __is_assignable_base<_T, _U, __void_t<decltype(declval<_T>() = declval<_U>())>>
+struct __is_assignable_base<_T, _U, decltype(static_cast<void>(declval<_T>() = declval<_U>()))>
   : true_type
 {};
 
@@ -1074,7 +1074,7 @@ struct __decay_base
 {};
 
 template<typename _T>
-struct __decay_base<_T, __void_t<decltype(__decay(declval<_T>()))>>
+struct __decay_base<_T, decltype(static_cast<void>(__decay(declval<_T>())))>
 {
     typedef decltype(__decay(declval<_T>())) type;
 };
@@ -1098,7 +1098,7 @@ struct __common_type_binary
 {};
 
 template<typename _T, typename _U>
-struct __common_type_binary<_T, _U, __void_t<decltype(true ? declval<_T>() : declval<_U>())>>
+struct __common_type_binary<_T, _U, decltype(static_cast<void>(true ? declval<_T>() : declval<_U>()))>
   : decay<decltype(true ? declval<_T>() : declval<_U>())>
 {};
 
@@ -1304,10 +1304,10 @@ struct __swappable_with
 {};
 
 template<typename _T, typename _U>
-struct __swappable_with<_T, _U, __void_t<
-    decltype(swap(declval<_T>(), declval<_U>())),
-    decltype(swap(declval<_U>(), declval<_T>()))>
-> : true_type
+struct __swappable_with<_T, _U, decltype(
+    static_cast<void>(swap(declval<_T>(), declval<_U>())),
+    static_cast<void>(swap(declval<_U>(), declval<_T>())))>
+  : true_type
 {};
 
 template<typename _T, typename _U, bool = __swappable_with<_T, _U>::value>
