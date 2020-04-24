@@ -5,6 +5,66 @@
 
 namespace std {
 
+template<typename _T>
+class reference_wrapper
+{
+    static constexpr _T* __addr(_T& __x) noexcept { return __builtin_addressof(__x); }
+    static void __addr(_T&&) = delete;
+
+    _T* __data;
+
+public:
+    typedef _T type;
+
+    template<typename _U, typename = __enable_if_t<!is_same<reference_wrapper, __remove_cvref_t<_U>>::value,
+        decltype(reference_wrapper::__addr(declval<_U>()))>>
+    reference_wrapper(_U&& __other) noexcept(noexcept(reference_wrapper::__addr(declval<_U>())))
+      : __data(reference_wrapper::__addr(static_cast<_U&&>(__other)))
+    {}
+
+    reference_wrapper(const reference_wrapper&) = default;
+    reference_wrapper& operator=(const reference_wrapper&) = default;
+
+    _T& get() const noexcept { return *__data; }
+    operator _T&() const noexcept { return get(); }
+
+    template<typename..._Args>
+    typename __invoke_result<_T&, _Args...>::type operator()(_Args&&... __args)
+    {
+        return std::__invoke(get(), static_cast<_Args&&>(__args)...);
+    }
+};
+
+template<typename _T>
+reference_wrapper<_T> ref(_T& __x)
+{
+    return __x;
+}
+
+template<typename _T>
+reference_wrapper<_T> ref(reference_wrapper<_T> __x)
+{
+    return __x;
+}
+
+template<typename _T>
+void ref(const _T&&) = delete;
+
+template<typename _T>
+reference_wrapper<const _T> cref(const _T& __x)
+{
+    return __x;
+}
+
+template<typename _T>
+reference_wrapper<const _T> cref(reference_wrapper<_T> __x)
+{
+    return __x;
+}
+
+template<typename _T>
+void cref(const _T&&) = delete;
+
 } // std
 
 #endif // <functional>
