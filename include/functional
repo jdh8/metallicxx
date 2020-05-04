@@ -17,9 +17,9 @@ public:
     typedef _T type;
 
     template<typename _U, typename = __enable_if_t<!is_same<reference_wrapper, __remove_cvref_t<_U>>::value,
-        decltype(reference_wrapper::__addr(declval<_U>()))>>
-    reference_wrapper(_U&& __other) noexcept(noexcept(reference_wrapper::__addr(declval<_U>())))
-      : __data(reference_wrapper::__addr(static_cast<_U&&>(__other)))
+        decltype((__addr)(declval<_U>()))>>
+    reference_wrapper(_U&& __other) noexcept(noexcept((__addr)(declval<_U>())))
+      : __data((__addr)(static_cast<_U&&>(__other)))
     {}
 
     reference_wrapper(const reference_wrapper&) = default;
