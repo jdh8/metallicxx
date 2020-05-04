@@ -144,6 +144,27 @@ noexcept(noexcept(__invoke(declval<_F>(), declval<_Args>()...)))
 }
 #endif
 
+template<typename _T = void>
+struct plus
+{
+    constexpr _T operator()(const _T& __x, const _T& __y) const noexcept(noexcept(__x + __y))
+    {
+        return __x + __y;
+    }
+};
+
+#if __cplusplus > 201103L
+template<>
+struct plus<void>
+{
+    template<typename _T, typename _U>
+    constexpr auto operator()(_T&& __x, _U&& __y) const noexcept(noexcept(declval<_T>() + declval<_U>()))
+    {
+        return static_cast<_T&&>(__x) + static_cast<_U&&>(__y);
+    }
+};
+#endif
+
 } // std
 
 #endif // <functional>
