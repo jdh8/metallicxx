@@ -4,6 +4,31 @@
 #include <bits/hash>
 
 namespace std {
+namespace placeholders {
+
+template<int> class __placeholder {};
+
+constexpr __placeholder<1> _1 = {};
+constexpr __placeholder<2> _2 = {};
+constexpr __placeholder<3> _3 = {};
+constexpr __placeholder<4> _4 = {};
+constexpr __placeholder<5> _5 = {};
+constexpr __placeholder<6> _6 = {};
+constexpr __placeholder<7> _7 = {};
+constexpr __placeholder<8> _8 = {};
+constexpr __placeholder<9> _9 = {};
+
+} // std::placeholders
+
+template<typename>
+struct is_placeholder
+  : integral_constant<int, 0>
+{};
+
+template<int _N>
+struct is_placeholder<placeholders::__placeholder<_N>>
+  : integral_constant<int, _N>
+{};
 
 template<typename _T>
 class reference_wrapper
