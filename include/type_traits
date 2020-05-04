@@ -1190,10 +1190,55 @@ struct __invoke_result
   : __invoke_result_base<void, _F, _Args...>
 {};
 
+template<typename, typename, typename, typename...>
+struct __invocable_r_base
+  : false_type
+{};
+
+template<typename _R, typename _F, typename..._Args>
+struct __invocable_r_base<decltype(declval<_R(_R) noexcept>()(__invoke(declval<_F>(), declval<_Args>()...))), _R, _F, _Args...>
+  : true_type
+{};
+
+template<typename _F, typename..._Args>
+struct __invocable_r_base<decltype(static_cast<void>(__invoke(declval<_F>(), declval<_Args>()...))), void, _F, _Args...>
+  : true_type
+{};
+
+template<typename _F, typename..._Args>
+struct __invocable_r_base<const void, const void, _F, _Args...>
+  : __invocable_r_base<void, void, _F, _Args...>
+{};
+
+template<typename _F, typename..._Args>
+struct __invocable_r_base<volatile void, volatile void, _F, _Args...>
+  : __invocable_r_base<void, void, _F, _Args...>
+{};
+
+template<typename _F, typename..._Args>
+struct __invocable_r_base<const volatile void, const volatile void, _F, _Args...>
+  : __invocable_r_base<void, void, _F, _Args...>
+{};
+
+template<typename _R, typename _F, typename..._Args>
+struct __invocable_r
+  : __invocable_r_base<_R, _R, _F, _Args...>
+{};
+
 #if __cplusplus > 201402L
 template<typename _F, typename..._Args>
 struct invoke_result
   : __invoke_result<_F, _Args...>
+{};
+
+template<typename _F, typename..._Args>
+struct is_invocable
+  : __invocable_r<void, _F, _Args...>
+{};
+
+template<typename _R, typename _F, typename..._Args>
+struct is_invocable_r
+  : __invocable_r<_R, _F, _Args...>
 {};
 #endif
 
