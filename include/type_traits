@@ -1191,15 +1191,15 @@ struct __invoke_result
 {};
 
 template<typename _T>
-_T __convert_invocation(_T) noexcept;
+_T __convert_or_discard(_T) noexcept;
 
-template<typename _T>
-__enable_if_t<is_void<_T>::value> __convert_invocation(...) noexcept;
+template<typename _V, typename _T>
+__enable_if_t<is_void<_V>::value> __convert_or_discard(_T&&) noexcept;
 
 template<typename _R, typename _F, typename..._Args>
-constexpr decltype(__convert_invocation<_R>(__invoke(declval<_F>(), declval<_Args>()...)))
-__invoke_r(_F&&, _Args&&...)
-noexcept(noexcept(__convert_invocation<_R>(__invoke(declval<_F>(), declval<_Args>()...))));
+constexpr decltype(__convert_or_discard<_R>(__invoke(declval<_F>(), declval<_Args>()...)))
+__invoke(_F&&, _Args&&...)
+noexcept(noexcept(__convert_or_discard<_R>(__invoke(declval<_F>(), declval<_Args>()...))));
 
 template<typename, typename, typename, typename...>
 struct __invocable_r_base
@@ -1216,6 +1216,21 @@ struct __invocable_r
   : __invocable_r_base<void, _R, _F, _Args...>
 {};
 
+template<typename, typename, typename, typename...>
+struct __nothrow_invocable_r_base
+  : false_type
+{};
+
+template<typename _R, typename _F, typename..._Args>
+struct __nothrow_invocable_r_base<decltype(static_cast<void>(__invoke<_R>(declval<_F>(), declval<_Args>()...))), _R, _F, _Args...>
+  : integral_constant<bool, noexcept(__invoke<_R>(declval<_F>(), declval<_Args>()...))>
+{};
+
+template<typename _R, typename _F, typename..._Args>
+struct __nothrow_invocable_r
+  : __nothrow_invocable_r_base<void, _R, _F, _Args...>
+{};
+
 #if __cplusplus > 201402L
 template<typename _F, typename..._Args>
 struct invoke_result
@@ -1230,6 +1245,16 @@ struct is_invocable
 template<typename _R, typename _F, typename..._Args>
 struct is_invocable_r
   : __invocable_r<_R, _F, _Args...>
+{};
+
+template<typename _F, typename..._Args>
+struct is_nothrow_invocable
+  : __nothrow_invocable_r<void, _F, _Args...>
+{};
+
+template<typename _R, typename _F, typename..._Args>
+struct is_nothrow_invocable_r
+  : __nothrow_invocable_r<_R, _F, _Args...>
 {};
 #endif
 
