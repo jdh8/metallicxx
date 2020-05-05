@@ -1,6 +1,8 @@
 #ifndef _METALLIC_TYPE_TRAITS
 #define _METALLIC_TYPE_TRAITS
 
+#include <bits/attributes>
+
 namespace std {
 
 ////////////////////////// Integral constant ///////////////////////////
@@ -140,6 +142,16 @@ struct __remove_cvref
 
 template<typename _T>
 using __remove_cvref_t = typename __remove_cvref<_T>::type;
+
+#if __cplusplus > 201703L
+template<typename _T>
+struct remove_cvref
+  : __remove_cvref<_T>
+{};
+
+template<typename _T>
+using remove_cvref_t = typename remove_cvref<_T>::type;
+#endif
 
 template<typename _T, typename = void>
 struct __add_lvalue_reference_base
@@ -648,10 +660,12 @@ struct is_pod
   : integral_constant<bool, __is_pod(_T)>
 {};
 
+#if __cplusplus < 202002L
 template<typename _T>
 struct is_literal_type
   : integral_constant<bool, __is_literal_type(_T)>
 {};
+#endif
 
 template<typename _T>
 struct is_empty
@@ -667,6 +681,47 @@ template<typename _T>
 struct is_abstract
   : integral_constant<bool, __is_abstract(_T)>
 {};
+
+#if __cplusplus > 201103L
+template<typename _T>
+struct is_final
+  : integral_constant<bool, __is_final(_T)>
+{};
+#endif
+
+#if __cplusplus > 201402L
+template<typename _T>
+struct has_unique_object_representations
+  : integral_constant<bool, __has_unique_object_representations(_T)>
+{};
+
+template<typename _T>
+struct is_aggregate
+  : integral_constant<bool, __is_aggregate(_T)>
+{};
+#endif
+
+#if __cplusplus > 201703L
+template<typename>
+struct is_bounded_array
+  : false_type
+{};
+
+template<typename _T, size_t _N>
+struct is_bounded_array<_T[_N]>
+  : true_type
+{};
+
+template<typename>
+struct is_unbounded_array
+  : false_type
+{};
+
+template<typename _T>
+struct is_unbounded_array<_T[]>
+  : true_type
+{};
+#endif
 
 /////////////////////////// Type categories ////////////////////////////
 
@@ -735,20 +790,40 @@ struct is_base_of
   : integral_constant<bool, __is_base_of(_Base, _Derived)>
 {};
 
+template<typename _T>
+_T __convert(_T) noexcept;
+
 template<typename _From, typename _To, typename = _To>
-struct __is_convertible_base
+struct __is_convertible
   : integral_constant<bool, is_void<_From>::value && is_void<_To>::value>
 {};
 
 template<typename _From, typename _To>
-struct __is_convertible_base<_From, _To, decltype(declval<_To(_To)>()(declval<_From>()))>
+struct __is_convertible<_From, _To, decltype(__convert<_To>(declval<_From>()))>
   : true_type
 {};
 
 template<typename _From, typename _To>
 struct is_convertible
-  : __is_convertible_base<_From, _To>
+  : __is_convertible<_From, _To>
 {};
+
+template<typename _From, typename _To, typename = _To>
+struct __is_nothrow_convertible
+  : integral_constant<bool, is_void<_From>::value && is_void<_To>::value>
+{};
+
+template<typename _From, typename _To>
+struct __is_nothrow_convertible<_From, _To, decltype(__convert<_To>(declval<_From>()))>
+  : integral_constant<bool, noexcept(__convert<_To>(declval<_From>()))>
+{};
+
+#if __cplusplus > 201703L
+template<typename _From, typename _To>
+struct is_nothrow_convertible
+  : __is_nothrow_convertible<_From, _To>
+{};
+#endif
 
 template<typename, typename, typename...>
 struct __is_constructible_base
@@ -1190,45 +1265,42 @@ struct __invoke_result
   : __invoke_result_base<void, _F, _Args...>
 {};
 
-template<typename _T>
-_T __convert_or_discard(_T) noexcept;
-
 template<typename _V, typename _T>
-__enable_if_t<is_void<_V>::value> __convert_or_discard(_T&&) noexcept;
+__enable_if_t<is_void<_V>::value> __convert(_T&&) noexcept;
 
 template<typename _R, typename _F, typename..._Args>
-constexpr decltype(__convert_or_discard<_R>(__invoke(declval<_F>(), declval<_Args>()...)))
+constexpr decltype(__convert<_R>(__invoke(declval<_F>(), declval<_Args>()...)))
 __invoke(_F&&, _Args&&...)
-noexcept(noexcept(__convert_or_discard<_R>(__invoke(declval<_F>(), declval<_Args>()...))));
+noexcept(noexcept(__convert<_R>(__invoke(declval<_F>(), declval<_Args>()...))));
 
 template<typename, typename, typename, typename...>
-struct __invocable_r_base
+struct __is_invocable_r_base
   : false_type
 {};
 
 template<typename _R, typename _F, typename..._Args>
-struct __invocable_r_base<decltype(static_cast<void>(__invoke<_R>(declval<_F>(), declval<_Args>()...))), _R, _F, _Args...>
+struct __is_invocable_r_base<decltype(static_cast<void>(__invoke<_R>(declval<_F>(), declval<_Args>()...))), _R, _F, _Args...>
   : true_type
 {};
 
 template<typename _R, typename _F, typename..._Args>
-struct __invocable_r
-  : __invocable_r_base<void, _R, _F, _Args...>
+struct __is_invocable_r
+  : __is_invocable_r_base<void, _R, _F, _Args...>
 {};
 
 template<typename, typename, typename, typename...>
-struct __nothrow_invocable_r_base
+struct __is_nothrow_invocable_r_base
   : false_type
 {};
 
 template<typename _R, typename _F, typename..._Args>
-struct __nothrow_invocable_r_base<decltype(static_cast<void>(__invoke<_R>(declval<_F>(), declval<_Args>()...))), _R, _F, _Args...>
+struct __is_nothrow_invocable_r_base<decltype(static_cast<void>(__invoke<_R>(declval<_F>(), declval<_Args>()...))), _R, _F, _Args...>
   : integral_constant<bool, noexcept(__invoke<_R>(declval<_F>(), declval<_Args>()...))>
 {};
 
 template<typename _R, typename _F, typename..._Args>
-struct __nothrow_invocable_r
-  : __nothrow_invocable_r_base<void, _R, _F, _Args...>
+struct __is_nothrow_invocable_r
+  : __is_nothrow_invocable_r_base<void, _R, _F, _Args...>
 {};
 
 #if __cplusplus > 201402L
@@ -1239,26 +1311,26 @@ struct invoke_result
 
 template<typename _F, typename..._Args>
 struct is_invocable
-  : __invocable_r<void, _F, _Args...>
+  : __is_invocable_r<void, _F, _Args...>
 {};
 
 template<typename _R, typename _F, typename..._Args>
 struct is_invocable_r
-  : __invocable_r<_R, _F, _Args...>
+  : __is_invocable_r<_R, _F, _Args...>
 {};
 
 template<typename _F, typename..._Args>
 struct is_nothrow_invocable
-  : __nothrow_invocable_r<void, _F, _Args...>
+  : __is_nothrow_invocable_r<void, _F, _Args...>
 {};
 
 template<typename _R, typename _F, typename..._Args>
 struct is_nothrow_invocable_r
-  : __nothrow_invocable_r<_R, _F, _Args...>
+  : __is_nothrow_invocable_r<_R, _F, _Args...>
 {};
 #endif
 
-#if __cplusplus <= 202002L
+#if __cplusplus < 202002L
 template<typename>
 struct result_of;
 
@@ -1358,70 +1430,70 @@ __enable_if_t<is_move_constructible<_T>::value && is_move_assignable<_T>::value>
 swap(_T&, _T&) noexcept(is_nothrow_move_constructible<_T>::value && is_nothrow_move_assignable<_T>::value);
 
 template<typename _T, typename = void>
-struct __swappable
+struct __is_swappable
   : false_type
 {};
 
 template<typename _T, typename = void>
-struct __nothrow_swappable
+struct __is_nothrow_swappable
   : false_type
 {};
 
 template<typename _T, size_t _N>
-__enable_if_t<__swappable<_T>::value>
-swap(_T (&)[_N], _T (&)[_N]) noexcept(__nothrow_swappable<_T>::value);
+__enable_if_t<__is_swappable<_T>::value>
+swap(_T (&)[_N], _T (&)[_N]) noexcept(__is_nothrow_swappable<_T>::value);
 
 template<typename _T, typename _U, typename = void>
-struct __swappable_with
+struct __is_swappable_with
   : false_type
 {};
 
 template<typename _T, typename _U>
-struct __swappable_with<_T, _U, decltype(
+struct __is_swappable_with<_T, _U, decltype(
     static_cast<void>(swap(declval<_T>(), declval<_U>())),
     static_cast<void>(swap(declval<_U>(), declval<_T>())))>
   : true_type
 {};
 
-template<typename _T, typename _U, bool = __swappable_with<_T, _U>::value>
-struct __nothrow_swappable_with
+template<typename _T, typename _U, bool = __is_swappable_with<_T, _U>::value>
+struct __is_nothrow_swappable_with
   : false_type
 {};
 
 template<typename _T, typename _U>
-struct __nothrow_swappable_with<_T, _U, true>
+struct __is_nothrow_swappable_with<_T, _U, true>
   : integral_constant<bool, noexcept(swap(declval<_T>(), declval<_U>())) && noexcept(swap(declval<_U>(), declval<_T>()))>
 {};
 
 template<typename _T>
-struct __swappable<_T, __void_t<_T&>>
-  : __swappable_with<_T&, _T&>
+struct __is_swappable<_T, __void_t<_T&>>
+  : __is_swappable_with<_T&, _T&>
 {};
 
 template<typename _T>
-struct __nothrow_swappable<_T, __void_t<_T&>>
-  : __nothrow_swappable_with<_T&, _T&>
+struct __is_nothrow_swappable<_T, __void_t<_T&>>
+  : __is_nothrow_swappable_with<_T&, _T&>
 {};
 
 #if __cplusplus > 201402L
 template<typename _T, typename _U>
 struct is_swappable_with
-  : __swappable_with<_T, _U>
+  : __is_swappable_with<_T, _U>
 {};
 
 template<typename _T>
 struct is_swappable
-  : __swappable<_T>
+  : __is_swappable<_T>
 {};
 
 template<typename _T, typename _U>
 struct is_nothrow_swappable_with
-  : __nothrow_swappable_with<_T, _U>
+  : __is_nothrow_swappable_with<_T, _U>
 {};
 
 template<typename _T>
 struct is_nothrow_swappable
-  : __nothrow_swappable<_T>
+  : __is_nothrow_swappable<_T>
 {};
 #endif // C++ > 14
 
@@ -1463,6 +1535,250 @@ template<typename _T>
 struct negation
   : bool_constant<!static_cast<bool>(_T::value)>
 {};
+
+#endif // C++ > 14
+
+//////////////////////////// Value aliases /////////////////////////////
+
+#if __cplusplus > 201402L
+
+template<typename _T, typename _U>
+inline constexpr bool is_same_v = is_same<_T, _U>::value;
+
+template<typename _T>
+inline constexpr bool is_void_v = is_void<_T>::value;
+
+template<typename _T>
+inline constexpr bool is_null_pointer_v = is_null_pointer<_T>::value;
+
+template<typename _T>
+inline constexpr bool is_integral_v = is_integral<_T>::value;
+
+template<typename _T>
+inline constexpr bool is_floating_point_v = is_floating_point<_T>::value;
+
+template<typename _T>
+inline constexpr bool is_array_v = is_array<_T>::value;
+
+template<typename _T>
+inline constexpr bool is_enum_v = is_enum<_T>::value;
+
+template<typename _T>
+inline constexpr bool is_union_v = is_union<_T>::value;
+
+template<typename _T>
+inline constexpr bool is_class_v = is_class<_T>::value;
+
+template<typename _T>
+inline constexpr bool is_function_v = is_function<_T>::value;
+
+template<typename _T>
+inline constexpr bool is_lvalue_reference_v = is_lvalue_reference<_T>::value;
+
+template<typename _T>
+inline constexpr bool is_rvalue_reference_v = is_rvalue_reference<_T>::value;
+
+template<typename _T>
+inline constexpr bool is_reference_v = is_reference<_T>::value;
+
+template<typename _T>
+inline constexpr bool is_pointer_v = is_pointer<_T>::value;
+
+template<typename _T>
+inline constexpr bool is_member_pointer_v = is_member_pointer<_T>::value;
+
+template<typename _T>
+inline constexpr bool is_member_object_pointer_v = is_member_object_pointer<_T>::value;
+
+template<typename _T>
+inline constexpr bool is_member_function_pointer_v = is_member_function_pointer<_T>::value;
+
+template<typename _T>
+inline constexpr bool is_const_v = is_const<_T>::value;
+
+template<typename _T>
+inline constexpr bool is_volatile_v = is_volatile<_T>::value;
+
+template<typename _T>
+inline constexpr bool is_trivial_v = is_trivial<_T>::value;
+
+template<typename _T>
+inline constexpr bool is_trivially_copyable_v = is_trivially_copyable<_T>::value;
+
+template<typename _T>
+inline constexpr bool is_standard_layout_v = is_standard_layout<_T>::value;
+
+template<typename _T>
+[[deprecated]] inline constexpr bool is_pod_v = is_pod<_T>::value;
+
+#if __cplusplus < 202002L
+template<typename _T>
+[[deprecated]] inline constexpr bool is_literal_type_v = is_literal_type<_T>::value;
+#endif
+
+template<typename _T>
+inline constexpr bool is_empty_v = is_empty<_T>::value;
+
+template<typename _T>
+inline constexpr bool is_polymorphic_v = is_polymorphic<_T>::value;
+
+template<typename _T>
+inline constexpr bool is_abstract_v = is_abstract<_T>::value;
+
+template<typename _T>
+inline constexpr bool is_final_v = is_final<_T>::value;
+
+template<typename _T>
+inline constexpr bool has_unique_object_representations_v = has_unique_object_representations<_T>::value;
+
+template<typename _T>
+inline constexpr bool is_aggregate_v = is_aggregate<_T>::value;
+
+template<typename _T>
+inline constexpr bool is_fundamental_v = is_fundamental<_T>::value;
+
+template<typename _T>
+inline constexpr bool is_arithmetic_v = is_arithmetic<_T>::value;
+
+template<typename _T>
+inline constexpr bool is_scalar_v = is_scalar<_T>::value;
+
+template<typename _T>
+inline constexpr bool is_object_v = is_object<_T>::value;
+
+template<typename _T>
+inline constexpr bool is_compound_v = is_compound<_T>::value;
+
+template<typename _T>
+inline constexpr bool is_signed_v = is_signed<_T>::value;
+
+template<typename _T>
+inline constexpr bool is_unsigned_v = is_unsigned<_T>::value;
+
+template<typename _Base, typename _Derived>
+inline constexpr bool is_base_of_v = is_base_of<_Base, _Derived>::value;
+
+template<typename _From, typename _To>
+inline constexpr bool is_convertible_v = is_convertible<_From, _To>::value;
+
+template<typename _T, typename..._Args>
+inline constexpr bool is_constructible_v = is_constructible<_T, _Args...>::value;
+
+template<typename _T, typename..._Args>
+inline constexpr bool is_trivially_constructible_v = is_trivially_constructible<_T, _Args...>::value;
+
+template<typename _T, typename..._Args>
+inline constexpr bool is_nothrow_constructible_v = is_nothrow_constructible<_T, _Args...>::value;
+
+template<typename _T>
+inline constexpr bool is_default_constructible_v = is_default_constructible<_T>::value;
+
+template<typename _T>
+inline constexpr bool is_trivially_default_constructible_v = is_trivially_default_constructible<_T>::value;
+
+template<typename _T>
+inline constexpr bool is_nothrow_default_constructible_v = is_nothrow_default_constructible<_T>::value;
+
+template<typename _T>
+inline constexpr bool is_copy_constructible_v = is_copy_constructible<_T>::value;
+
+template<typename _T>
+inline constexpr bool is_trivially_copy_constructible_v = is_trivially_copy_constructible<_T>::value;
+
+template<typename _T>
+inline constexpr bool is_nothrow_copy_constructible_v = is_nothrow_copy_constructible<_T>::value;
+
+template<typename _T>
+inline constexpr bool is_move_constructible_v = is_move_constructible<_T>::value;
+
+template<typename _T>
+inline constexpr bool is_trivially_move_constructible_v = is_trivially_move_constructible<_T>::value;
+
+template<typename _T>
+inline constexpr bool is_nothrow_move_constructible_v = is_nothrow_move_constructible<_T>::value;
+
+template<typename _T, typename _U>
+inline constexpr bool is_assignable_v = is_assignable<_T, _U>::value;
+
+template<typename _T, typename _U>
+inline constexpr bool is_trivially_assignable_v = is_trivially_assignable<_T, _U>::value;
+
+template<typename _T, typename _U>
+inline constexpr bool is_nothrow_assignable_v = is_nothrow_assignable<_T, _U>::value;
+
+template<typename _T>
+inline constexpr bool is_copy_assignable_v = is_copy_assignable<_T>::value;
+
+template<typename _T>
+inline constexpr bool is_trivially_copy_assignable_v = is_trivially_copy_assignable<_T>::value;
+
+template<typename _T>
+inline constexpr bool is_nothrow_copy_assignable_v = is_nothrow_copy_assignable<_T>::value;
+
+template<typename _T>
+inline constexpr bool is_move_assignable_v = is_move_assignable<_T>::value;
+
+template<typename _T>
+inline constexpr bool is_trivially_move_assignable_v = is_trivially_move_assignable<_T>::value;
+
+template<typename _T>
+inline constexpr bool is_nothrow_move_assignable_v = is_nothrow_move_assignable<_T>::value;
+
+template<typename _T>
+inline constexpr bool is_destructible_v = is_destructible<_T>::value;
+
+template<typename _T>
+inline constexpr bool is_trivially_destructible_v = is_trivially_destructible<_T>::value;
+
+template<typename _T>
+inline constexpr bool is_nothrow_destructible_v = is_nothrow_destructible<_T>::value;
+
+template<typename _T>
+inline constexpr bool has_virtual_destructor_v = has_virtual_destructor<_T>::value;
+
+template<typename _T, typename _U>
+inline constexpr bool is_swappable_with_v = is_swappable_with<_T, _U>::value;
+
+template<typename _T>
+inline constexpr bool is_swappable_v = is_swappable<_T>::value;
+
+template<typename _T, typename _U>
+inline constexpr bool is_nothrow_swappable_with_v = is_nothrow_swappable_with<_T, _U>::value;
+
+template<typename _T>
+inline constexpr bool is_nothrow_swappable_v = is_nothrow_swappable<_T>::value;
+
+template<typename _F, typename..._Args>
+inline constexpr bool is_invocable_v = is_invocable<_F, _Args...>::value;
+
+template<typename _R, typename _F, typename..._Args>
+inline constexpr bool is_invocable_r_v = is_invocable_r<_R, _F, _Args...>::value;
+
+template<typename _F, typename..._Args>
+inline constexpr bool is_nothrow_invocable_v = is_nothrow_invocable<_F, _Args...>::value;
+
+template<typename _R, typename _F, typename..._Args>
+inline constexpr bool is_nothrow_invocable_r_v = is_nothrow_invocable_r<_R, _F, _Args...>::value;
+
+template<typename..._T>
+inline constexpr bool conjunction_v = conjunction<_T...>::value;
+
+template<typename..._T>
+inline constexpr bool disjunction_v = disjunction<_T...>::value;
+
+template<typename..._T>
+inline constexpr bool negation_v = negation<_T...>::value;
+
+#if __cplusplus > 201703L
+template<typename _T>
+inline constexpr bool is_bounded_array_v = is_bounded_array<_T>::value;
+
+template<typename _T>
+inline constexpr bool is_unbounded_array_v = is_unbounded_array<_T>::value;
+
+template<typename _From, typename _To>
+inline constexpr bool is_nothrow_convertible_v = is_nothrow_convertible<_From, _To>::value;
+#endif // C++ > 17
 
 #endif // C++ > 14
 
