@@ -1152,28 +1152,28 @@ __invoke_dereference(_T&&) noexcept(noexcept(*declval<_T>()));
 
 template<typename _Base, typename _T>
 constexpr __enable_if_t<is_base_of<_Base, typename decay<_T>::type>::value, _T&&>
-__invoke_dereference(_T&& __x) noexcept;
+__invoke_dereference(_T&&) noexcept;
 
 template<typename _Base, typename _T>
-constexpr _T& __invoke_dereference(reference_wrapper<_T> __x) noexcept;
+constexpr _T& __invoke_dereference(reference_wrapper<_T>) noexcept;
 
 template<typename _Base, typename _T>
 constexpr __enable_if_t<!is_base_of<_Base, typename decay<_T>::type>::value, decltype(*declval<_T>())>
-__invoke_dereference(_T&& __x) noexcept(noexcept(*declval<_T>()));
+__invoke_dereference(_T&&) noexcept(noexcept(*declval<_T>()));
 
 template<typename _T, typename _Base, typename _U>
-constexpr auto __invoke(_T _Base::* __x, _U&& __y)
+constexpr auto __invoke(_T _Base::* __x, _U&&)
 noexcept(noexcept(__invoke_dereference<_Base>(declval<_U>()).*__x)) ->
 __enable_if_t<!is_function<_T>::value, decltype(__invoke_dereference<_Base>(declval<_U>()).*__x)>;
 
 template<typename _T, typename _Base, typename _U, typename..._Args>
-constexpr auto __invoke(_T _Base::* __x, _U&& __y, _Args&&... __args)
+constexpr auto __invoke(_T _Base::* __x, _U&&, _Args&&...)
 noexcept(noexcept((__invoke_dereference<_Base>(declval<_U>()).*__x)(declval<_Args>()...))) ->
 __enable_if_t<is_function<_T>::value, decltype((__invoke_dereference<_Base>(declval<_U>()).*__x)(declval<_Args>()...))>;
 
 template<typename _F, typename..._Args>
 constexpr decltype(declval<_F>()(declval<_Args>()...))
-__invoke(_F&& __f, _Args&&... __args)
+__invoke(_F&&, _Args&&...)
 noexcept(noexcept(declval<_F>()(declval<_Args>()...)));
 
 template<typename, typename, typename...>
@@ -1190,39 +1190,30 @@ struct __invoke_result
   : __invoke_result_base<void, _F, _Args...>
 {};
 
+template<typename _T>
+_T __convert_invocation(_T) noexcept;
+
+template<typename _T>
+__enable_if_t<is_void<_T>::value> __convert_invocation(...) noexcept;
+
+template<typename _R, typename _F, typename..._Args>
+constexpr decltype(__convert_invocation<_R>(__invoke(declval<_F>(), declval<_Args>()...)))
+__invoke_r(_F&&, _Args&&...)
+noexcept(noexcept(__convert_invocation<_R>(__invoke(declval<_F>(), declval<_Args>()...))));
+
 template<typename, typename, typename, typename...>
 struct __invocable_r_base
   : false_type
 {};
 
 template<typename _R, typename _F, typename..._Args>
-struct __invocable_r_base<decltype(declval<_R(_R) noexcept>()(__invoke(declval<_F>(), declval<_Args>()...))), _R, _F, _Args...>
+struct __invocable_r_base<decltype(static_cast<void>(__invoke<_R>(declval<_F>(), declval<_Args>()...))), _R, _F, _Args...>
   : true_type
-{};
-
-template<typename _F, typename..._Args>
-struct __invocable_r_base<decltype(static_cast<void>(__invoke(declval<_F>(), declval<_Args>()...))), void, _F, _Args...>
-  : true_type
-{};
-
-template<typename _F, typename..._Args>
-struct __invocable_r_base<const void, const void, _F, _Args...>
-  : __invocable_r_base<void, void, _F, _Args...>
-{};
-
-template<typename _F, typename..._Args>
-struct __invocable_r_base<volatile void, volatile void, _F, _Args...>
-  : __invocable_r_base<void, void, _F, _Args...>
-{};
-
-template<typename _F, typename..._Args>
-struct __invocable_r_base<const volatile void, const volatile void, _F, _Args...>
-  : __invocable_r_base<void, void, _F, _Args...>
 {};
 
 template<typename _R, typename _F, typename..._Args>
 struct __invocable_r
-  : __invocable_r_base<_R, _R, _F, _Args...>
+  : __invocable_r_base<void, _R, _F, _Args...>
 {};
 
 #if __cplusplus > 201402L
