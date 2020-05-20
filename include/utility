@@ -16,8 +16,8 @@ swap(_T& __x, _T& __y) noexcept(is_nothrow_move_constructible<_T>::value && is_n
 }
 
 template<typename _T, size_t _N>
-__enable_if_t<__swappable<_T>::value>
-swap(_T (&__x)[_N], _T (&__y)[_N]) noexcept(__nothrow_swappable<_T>::value)
+__enable_if_t<__is_swappable<_T>::value>
+swap(_T (&__x)[_N], _T (&__y)[_N]) noexcept(__is_nothrow_swappable<_T>::value)
 {
     for (size_t __i = 0; __i < _N; ++__i)
         swap(__x[__i], __y[__i]);
