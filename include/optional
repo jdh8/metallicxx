@@ -32,19 +32,15 @@ struct bad_optional_access : exception
 template<typename _T, bool = is_trivially_destructible<_T>::value>
 struct __optional_destruct_base
 {
-    class _Empty {};
-
     union
     {
-        _Empty __state;
         _T __value;
     };
 
     bool __engaged;
 
     constexpr __optional_destruct_base() noexcept
-      : __state(),
-        __engaged(false)
+      : __engaged(false)
     {}
 
     template<typename... _Args>
@@ -62,19 +58,15 @@ struct __optional_destruct_base
 template<typename _T>
 struct __optional_destruct_base<_T, false>
 {
-    class _Empty {};
-
     union
     {
-        _Empty __state;
         _T __value;
     };
 
     bool __engaged;
 
     constexpr __optional_destruct_base() noexcept
-      : __state(),
-        __engaged(false)
+      : __engaged(false)
     {}
 
     template<typename... _Args>
